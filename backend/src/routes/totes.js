@@ -1,5 +1,9 @@
 import express from 'express';
 import * as totesController from '../controllers/totesController.js';
+import {
+  validateToteRequest,
+  validateIdParam,
+} from '../middleware/validation.js';
 
 const router = express.Router();
 
@@ -7,15 +11,15 @@ const router = express.Router();
 router.get('/', totesController.getAllTotes);
 
 // GET single tote by ID
-router.get('/:id', totesController.getToteById);
+router.get('/:id', validateIdParam(), totesController.getToteById);
 
 // POST create new tote
-router.post('/', totesController.createTote);
+router.post('/', validateToteRequest(false), totesController.createTote);
 
 // PUT update tote
-router.put('/:id', totesController.updateTote);
+router.put('/:id', validateIdParam(), validateToteRequest(true), totesController.updateTote);
 
 // DELETE tote
-router.delete('/:id', totesController.deleteTote);
+router.delete('/:id', validateIdParam(), totesController.deleteTote);
 
 export default router;

@@ -1,4 +1,5 @@
 import { readData, writeData } from '../utils/dataStore.js';
+import { createToteModel } from '../models/Tote.js';
 
 export const getAllTotes = async () => {
   const data = await readData();
@@ -17,9 +18,12 @@ export const createTote = async (toteData) => {
     data.totes = [];
   }
 
+  // Create tote using model
+  const toteModel = createToteModel(toteData);
+
   const newTote = {
     id: generateId(),
-    ...toteData,
+    ...toteModel,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
@@ -42,6 +46,7 @@ export const updateTote = async (id, toteData) => {
     ...data.totes[index],
     ...toteData,
     id, // Preserve the original ID
+    createdAt: data.totes[index].createdAt, // Preserve creation date
     updatedAt: new Date().toISOString(),
   };
 
@@ -55,6 +60,15 @@ export const deleteTote = async (id) => {
 
   if (index === -1 || index === undefined) {
     return false;
+  }
+
+  // Business logic validation: check if tote has items
+  const itemsInTote = data.items?.filter(item => item.toteId === id) || [];
+  if (itemsInTote.length > 0) {
+    throw new Error(
+      `Cannot delete tote: it contains ${itemsInTote.length} item(s). ` +
+      'Please remove or reassign items before deleting the tote.'
+    );
   }
 
   data.totes.splice(index, 1);

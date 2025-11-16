@@ -51,6 +51,7 @@ coverage/
 *.sqlite
 *.sqlite3
 *.db
+data.json
 
 # Uploads (if implementing file uploads)
 uploads/

@@ -23,7 +23,8 @@ export const getItemById = async (req, res) => {
 
 export const createItem = async (req, res) => {
   try {
-    const newItem = await itemsService.createItem(req.body);
+    // Use validatedData from middleware
+    const newItem = await itemsService.createItem(req.validatedData);
     res.status(201).json(newItem);
   } catch (error) {
     res.status(400).json({ error: error.message });
@@ -32,7 +33,8 @@ export const createItem = async (req, res) => {
 
 export const updateItem = async (req, res) => {
   try {
-    const updatedItem = await itemsService.updateItem(req.params.id, req.body);
+    // Use validatedData from middleware
+    const updatedItem = await itemsService.updateItem(req.params.id, req.validatedData);
     if (!updatedItem) {
       return res.status(404).json({ error: 'Item not found' });
     }

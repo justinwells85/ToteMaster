@@ -1,4 +1,6 @@
 import { readData, writeData } from '../utils/dataStore.js';
+import { createItemModel } from '../models/Item.js';
+import { getToteById } from './totesService.js';
 
 export const getAllItems = async () => {
   const data = await readData();
@@ -17,9 +19,20 @@ export const createItem = async (itemData) => {
     data.items = [];
   }
 
+  // Business logic validation: if toteId is provided, ensure tote exists
+  if (itemData.toteId) {
+    const tote = await getToteById(itemData.toteId);
+    if (!tote) {
+      throw new Error(`Tote with ID '${itemData.toteId}' does not exist`);
+    }
+  }
+
+  // Create item using model
+  const itemModel = createItemModel(itemData);
+
   const newItem = {
     id: generateId(),
-    ...itemData,
+    ...itemModel,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
@@ -38,10 +51,19 @@ export const updateItem = async (id, itemData) => {
     return null;
   }
 
+  // Business logic validation: if toteId is being changed, ensure new tote exists
+  if (itemData.toteId && itemData.toteId !== data.items[index].toteId) {
+    const tote = await getToteById(itemData.toteId);
+    if (!tote) {
+      throw new Error(`Tote with ID '${itemData.toteId}' does not exist`);
+    }
+  }
+
   data.items[index] = {
     ...data.items[index],
     ...itemData,
     id, // Preserve the original ID
+    createdAt: data.items[index].createdAt, // Preserve creation date
     updatedAt: new Date().toISOString(),
   };
 

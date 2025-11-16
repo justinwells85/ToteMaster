@@ -23,7 +23,8 @@ export const getToteById = async (req, res) => {
 
 export const createTote = async (req, res) => {
   try {
-    const newTote = await totesService.createTote(req.body);
+    // Use validatedData from middleware
+    const newTote = await totesService.createTote(req.validatedData);
     res.status(201).json(newTote);
   } catch (error) {
     res.status(400).json({ error: error.message });
@@ -32,7 +33,8 @@ export const createTote = async (req, res) => {
 
 export const updateTote = async (req, res) => {
   try {
-    const updatedTote = await totesService.updateTote(req.params.id, req.body);
+    // Use validatedData from middleware
+    const updatedTote = await totesService.updateTote(req.params.id, req.validatedData);
     if (!updatedTote) {
       return res.status(404).json({ error: 'Tote not found' });
     }
