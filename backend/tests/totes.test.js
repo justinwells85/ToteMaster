@@ -3,6 +3,7 @@ import { jest } from '@jest/globals';
 import express from 'express';
 import cors from 'cors';
 import totesRouter from '../src/routes/totes.js';
+import { setupTestDb, cleanTestDb, closeTestDb } from './helpers/testDb.js';
 
 // Create a test app
 const createTestApp = () => {
@@ -16,8 +17,17 @@ const createTestApp = () => {
 describe('Totes API', () => {
   let app;
 
-  beforeEach(() => {
+  beforeAll(async () => {
+    await setupTestDb();
+  });
+
+  beforeEach(async () => {
     app = createTestApp();
+    await cleanTestDb();
+  });
+
+  afterAll(async () => {
+    await closeTestDb();
   });
 
   describe('GET /api/totes', () => {

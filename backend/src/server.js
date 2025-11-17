@@ -5,6 +5,8 @@ import itemsRouter from './routes/items.js';
 import totesRouter from './routes/totes.js';
 import { requestLogger } from './middleware/logger.js';
 import logger from './utils/logger.js';
+import db from './db/index.js';
+import { runMigrations } from './db/migrate.js';
 
 // Load environment variables
 dotenv.config();
@@ -23,6 +25,7 @@ app.get('/', (req, res) => {
   res.json({
     message: 'Tote Master API',
     version: '1.0.0',
+    database: 'PostgreSQL',
     endpoints: {
       items: '/api/items',
       totes: '/api/totes',
@@ -56,9 +59,59 @@ app.use((req, res) => {
   });
 });
 
-// Start server
-app.listen(PORT, () => {
-  logger.info(`Tote Master API server running on http://localhost:${PORT}`);
-});
+// Database initialization and server startup
+async function startServer() {
+  try {
+    // Test database connection
+    logger.info('Testing database connection...');
+    const connected = await db.testConnection();
+
+    if (!connected) {
+      throw new Error('Could not connect to database');
+    }
+
+    // Run migrations
+    logger.info('Running database migrations...');
+    await runMigrations();
+
+    // Start server
+    const server = app.listen(PORT, () => {
+      logger.info(`Tote Master API server running on http://localhost:${PORT}`);
+      logger.info('Database: PostgreSQL');
+      logger.info('Ready to accept requests');
+    });
+
+    // Graceful shutdown
+    const gracefulShutdown = async (signal) => {
+      logger.info(`${signal} received: closing HTTP server`);
+
+      server.close(async () => {
+        logger.info('HTTP server closed');
+
+        // Close database connections
+        await db.closePool();
+        logger.info('Database connections closed');
+
+        process.exit(0);
+      });
+
+      // Force shutdown after 10 seconds
+      setTimeout(() => {
+        logger.error('Forcefully shutting down after timeout');
+        process.exit(1);
+      }, 10000);
+    };
+
+    process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+    process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+  } catch (error) {
+    logger.error('Failed to start server:', error);
+    process.exit(1);
+  }
+}
+
+// Start the server
+startServer();
 
 export default app;

@@ -18,17 +18,20 @@ Tote Master is a web-based inventory management system designed to help you keep
 
 ## Technology Stack
 
-### MVP Phase
+### Current Implementation
 - **Frontend**: React 18 + Vite
 - **Backend**: Node.js + Express
-- **Data Storage**: JSON file-based (will migrate to database later)
+- **Database**: PostgreSQL 16
+- **Containerization**: Docker + Docker Compose
+- **Testing**: Jest (backend), Vitest (frontend)
+- **CI/CD**: GitHub Actions
 
 ### Future Roadmap
 - Migration to Python/Java microservices
-- PostgreSQL or MongoDB database
 - Mobile app (React Native)
 - Photo uploads for items
 - Barcode/QR code scanning
+- User authentication
 
 ## Project Structure
 
@@ -56,6 +59,7 @@ Tote Master/
 ## Prerequisites
 
 - **Node.js** 18+ and npm
+- **PostgreSQL** 14+ (or use Docker)
 - **Git**
 
 ## Installation
@@ -67,7 +71,34 @@ git clone https://github.com/justinwells85/Tote Master.git
 cd Tote Master
 ```
 
-### 2. Set Up Backend
+### 2. Set Up PostgreSQL Database
+
+**Option A: Using Docker (Recommended)**
+
+The easiest way is to use the provided Docker Compose setup which includes PostgreSQL:
+
+```bash
+# Start PostgreSQL container
+docker compose up postgres -d
+
+# Check if database is ready
+docker compose logs postgres
+```
+
+**Option B: Local PostgreSQL Installation**
+
+If you have PostgreSQL installed locally:
+
+1. Create a database and user:
+```sql
+CREATE DATABASE totemaster;
+CREATE USER totemaster WITH ENCRYPTED PASSWORD 'totemaster';
+GRANT ALL PRIVILEGES ON DATABASE totemaster TO totemaster;
+```
+
+2. Note your connection details for the `.env` file.
+
+### 3. Set Up Backend
 
 ```bash
 cd backend
@@ -80,13 +111,41 @@ Create a `.env` file in the `backend/` directory (copy from `.env.example`):
 cp .env.example .env
 ```
 
-Edit `.env` if needed:
-```
+Edit `.env` with your database configuration:
+```env
 PORT=3000
 NODE_ENV=development
+
+# Database Configuration
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=totemaster
+DB_USER=totemaster
+DB_PASSWORD=totemaster
 ```
 
-### 3. Set Up Frontend
+**Run Database Migrations:**
+
+```bash
+# Run migrations to create database tables
+npm run migrate
+
+# Check migration status
+npm run migrate:status
+```
+
+**Optional: Import Existing Data**
+
+If you have existing data in `data.json`:
+
+```bash
+# Import JSON data to PostgreSQL
+npm run migrate:data
+```
+
+This will import your totes and items into the database. The original `data.json` will be backed up automatically.
+
+### 4. Set Up Frontend
 
 ```bash
 cd ../frontend
@@ -94,6 +153,13 @@ npm install
 ```
 
 ## Running the Application
+
+**Important:** Make sure PostgreSQL is running before starting the backend server.
+
+If using Docker for PostgreSQL:
+```bash
+docker compose up postgres -d
+```
 
 You'll need two terminal windows to run both the backend and frontend.
 
@@ -104,7 +170,10 @@ cd backend
 npm run dev
 ```
 
-The API will be available at `http://localhost:3000`
+The backend will:
+1. Connect to PostgreSQL
+2. Run any pending migrations automatically
+3. Start the API server at `http://localhost:3000`
 
 ### Terminal 2: Start Frontend Development Server
 
@@ -408,11 +477,11 @@ docker compose build
 
 ## Testing
 
-Tote Master includes comprehensive testing frameworks for both frontend and backend.
+Tote Master includes comprehensive testing frameworks for both frontend and backend with PostgreSQL test database support.
 
 ### Backend Testing
 
-The backend uses **Jest** with **Supertest** for API testing.
+The backend uses **Jest** with **Supertest** for API testing and includes a test database infrastructure.
 
 ```bash
 cd backend
@@ -427,21 +496,48 @@ npm run test:watch
 npm run test:coverage
 ```
 
+**Test Infrastructure:**
+- **Test Database Helper** (`tests/helpers/testDb.js`) - Utilities for setting up/tearing down test database
+- **Automatic Schema Setup** - Runs migrations automatically for test database
+- **Test Data Fixtures** - Helper functions to create test totes and items
+- **Clean Slate Testing** - Each test runs with a fresh database state
+
 **Test Coverage:**
-- ✅ Model validation tests (Item, Tote)
-- ✅ API endpoint tests (Items, Totes)
-- 🚧 Integration tests (require data layer mocking)
+- ✅ **Model Validation** (`tests/models.test.js`) - Comprehensive validation logic tests
+- ✅ **Repository Layer** (`tests/repositories/`) - Database operations and queries
+  - `ItemRepository.test.js` - Full CRUD, search, pagination, and filtering tests
+  - `ToteRepository.test.js` - Tote operations, item counting, and relationships
+- ✅ **Service Layer** (`tests/services/`) - Business logic with mocked repositories
+  - `itemsService.test.js` - Item business logic, validation, and tote reference checks
+  - `totesService.test.js` - Tote business logic, cascade protection, and validation
+- ✅ **API Integration** (`tests/items.test.js`, `tests/totes.test.js`) - End-to-end API tests with real database
 
-**Test Files:**
-- `tests/models.test.js` - Model and validation tests
-- `tests/items.test.js` - Items API endpoint tests
-- `tests/totes.test.js` - Totes API endpoint tests
+**Test Organization:**
+```
+backend/tests/
+├── helpers/
+│   └── testDb.js              # Test database utilities
+├── repositories/
+│   ├── ItemRepository.test.js # Repository layer tests
+│   └── ToteRepository.test.js
+├── services/
+│   ├── itemsService.test.js   # Service layer tests (mocked)
+│   └── totesService.test.js
+├── models.test.js             # Model validation tests
+├── items.test.js              # Items API integration tests
+└── totes.test.js              # Totes API integration tests
+```
 
-**Note:** Integration tests currently require a properly initialized data store. Future improvements will include test database mocking for isolated testing.
+**Key Testing Features:**
+- **Test Database Isolation** - Tests run against a real PostgreSQL database with automatic cleanup
+- **Mocked Unit Tests** - Service layer tests use mocked repositories for fast execution
+- **Integration Tests** - API tests validate full request/response cycle with database
+- **Referential Integrity** - Tests validate foreign key constraints and cascade behavior
+- **Edge Cases** - Comprehensive coverage of validation errors, not found scenarios, and business rules
 
 ### Frontend Testing
 
-The frontend uses **Vitest** with **React Testing Library** for component testing.
+The frontend uses **Vitest** with **React Testing Library** for component and API testing.
 
 ```bash
 cd frontend
@@ -460,26 +556,49 @@ npm run test:coverage
 ```
 
 **Test Coverage:**
-- ✅ Component unit tests (Modal, Pagination, SearchBar)
-- 🚧 Page component tests (to be added)
-- 🚧 Service/API tests (to be added)
+- ✅ **Component Tests** (`src/components/*.test.jsx`) - UI component behavior
+  - `Modal.test.jsx` - Modal visibility, open/close, and callbacks
+  - `Pagination.test.jsx` - Page navigation, boundaries, and display
+  - `SearchBar.test.jsx` - Search input and debouncing
+- ✅ **API Service Tests** (`src/services/api.test.js`) - Mocked fetch calls
+  - Items API - CRUD operations, search, and error handling
+  - Containers API - Tote management operations
+  - Locations API - Location management
 
-**Test Files:**
-- `src/components/*.test.jsx` - Component tests
-- `src/test/setup.js` - Test configuration
+**Test Organization:**
+```
+frontend/src/
+├── components/
+│   ├── Modal.test.jsx
+│   ├── Pagination.test.jsx
+│   └── SearchBar.test.jsx
+├── services/
+│   └── api.test.js           # API client tests with mocked fetch
+└── test/
+    └── setup.js              # Vitest configuration and global setup
+```
 
 **Testing Best Practices:**
 - Write tests alongside new features
 - Aim for 70%+ test coverage on critical paths
 - Use React Testing Library's user-centric queries
-- Mock API calls in component tests
+- Mock API calls with vitest mocking utilities
+- Test user interactions and accessibility
+
+### Running Tests in CI/CD
+
+Tests are automatically run in GitHub Actions on every push and pull request:
+- Backend tests run on Node.js 18.x and 20.x
+- Frontend tests run on Node.js 18.x and 20.x
+- Coverage reports generated for code quality monitoring
 
 ### Future Testing Enhancements
 
 - [ ] E2E testing with Playwright or Cypress
-- [ ] Test database for integration tests
-- [ ] CI/CD pipeline integration
+- [ ] Frontend page component tests
 - [ ] Visual regression testing
+- [ ] Performance testing
+- [ ] Load testing for API endpoints
 
 ## Contributing
 
@@ -503,17 +622,21 @@ We follow [Conventional Commits](https://www.conventionalcommits.org/):
 
 ## Roadmap
 
-### Phase 1 (MVP - Current)
+### Phase 1 (MVP - Complete)
 - [x] Project setup
 - [x] Basic backend API
 - [x] Basic frontend structure
-- [ ] Item CRUD operations UI
-- [ ] Tote CRUD operations UI
-- [ ] Search functionality UI
-- [ ] Basic styling
+- [x] Item CRUD operations UI
+- [x] Tote CRUD operations UI
+- [x] Search functionality UI
+- [x] Basic styling
+- [x] PostgreSQL database integration
+- [x] Database migrations system
+- [x] Comprehensive testing framework
+- [x] CI/CD with GitHub Actions
+- [x] Docker containerization
 
-### Phase 2
-- [ ] Database integration (PostgreSQL/MongoDB)
+### Phase 2 (In Progress)
 - [ ] User authentication
 - [ ] Photo uploads for items
 - [ ] Advanced search and filtering

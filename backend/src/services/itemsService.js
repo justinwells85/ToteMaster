@@ -1,137 +1,118 @@
-import { readData, writeData } from '../utils/dataStore.js';
-import { createItemModel } from '../models/Item.js';
-import { getToteById } from './totesService.js';
-import { sortItems, paginateItems, createPaginatedResponse } from '../utils/queryHelpers.js';
+import ItemRepository from '../db/repositories/ItemRepository.js';
+import ToteRepository from '../db/repositories/ToteRepository.js';
+import { validateItem } from '../models/Item.js';
 
 export const getAllItems = async (options = {}) => {
-  const data = await readData();
-  let items = data.items || [];
+  const {
+    sortBy,
+    sortOrder,
+    paginate = false,
+    page = 1,
+    limit = 10,
+    toteId,
+    category,
+  } = options;
 
-  // Apply sorting if requested
-  if (options.sortBy) {
-    items = sortItems(items, options.sortBy, options.sortOrder);
+  // If pagination is requested, use repository's pagination support
+  if (paginate) {
+    return await ItemRepository.findAll({
+      page,
+      limit,
+      sortBy,
+      sortOrder,
+      toteId,
+      category,
+    });
   }
 
-  // Apply pagination if requested
-  if (options.paginate) {
-    const total = items.length;
-    const paginatedItems = paginateItems(items, options.offset, options.limit);
-    return createPaginatedResponse(paginatedItems, total, options.page, options.limit);
-  }
+  // Otherwise, get all items (still uses pagination internally but returns just data)
+  const result = await ItemRepository.findAll({
+    page: 1,
+    limit: 1000, // Large limit for "all" items
+    sortBy,
+    sortOrder,
+    toteId,
+    category,
+  });
 
-  return items;
+  return result.data;
 };
 
 export const getItemById = async (id) => {
-  const data = await readData();
-  return data.items?.find(item => item.id === id);
+  return await ItemRepository.findById(id);
 };
 
 export const createItem = async (itemData) => {
-  const data = await readData();
-
-  if (!data.items) {
-    data.items = [];
+  // Validate item data
+  const validation = validateItem(itemData);
+  if (!validation.valid) {
+    const error = new Error('Validation failed');
+    error.details = validation.errors;
+    throw error;
   }
 
   // Business logic validation: if toteId is provided, ensure tote exists
   if (itemData.toteId) {
-    const tote = await getToteById(itemData.toteId);
+    const tote = await ToteRepository.findById(itemData.toteId);
     if (!tote) {
       throw new Error(`Tote with ID '${itemData.toteId}' does not exist`);
     }
   }
 
-  // Create item using model
-  const itemModel = createItemModel(itemData);
-
-  const newItem = {
-    id: generateId(),
-    ...itemModel,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  };
-
-  data.items.push(newItem);
-  await writeData(data);
-
-  return newItem;
+  // Create item in database
+  return await ItemRepository.create(itemData);
 };
 
 export const updateItem = async (id, itemData) => {
-  const data = await readData();
-  const index = data.items?.findIndex(item => item.id === id);
+  // Validate update data
+  const validation = validateItem(itemData, true); // true = isUpdate
+  if (!validation.valid) {
+    const error = new Error('Validation failed');
+    error.details = validation.errors;
+    throw error;
+  }
 
-  if (index === -1 || index === undefined) {
+  // Check if item exists
+  const existingItem = await ItemRepository.findById(id);
+  if (!existingItem) {
     return null;
   }
 
   // Business logic validation: if toteId is being changed, ensure new tote exists
-  if (itemData.toteId && itemData.toteId !== data.items[index].toteId) {
-    const tote = await getToteById(itemData.toteId);
+  if (itemData.toteId && itemData.toteId !== existingItem.toteId) {
+    const tote = await ToteRepository.findById(itemData.toteId);
     if (!tote) {
       throw new Error(`Tote with ID '${itemData.toteId}' does not exist`);
     }
   }
 
-  data.items[index] = {
-    ...data.items[index],
-    ...itemData,
-    id, // Preserve the original ID
-    createdAt: data.items[index].createdAt, // Preserve creation date
-    updatedAt: new Date().toISOString(),
-  };
-
-  await writeData(data);
-  return data.items[index];
+  // Update item in database
+  return await ItemRepository.update(id, itemData);
 };
 
 export const deleteItem = async (id) => {
-  const data = await readData();
-  const index = data.items?.findIndex(item => item.id === id);
-
-  if (index === -1 || index === undefined) {
-    return false;
-  }
-
-  data.items.splice(index, 1);
-  await writeData(data);
-  return true;
+  return await ItemRepository.delete(id);
 };
 
 export const getItemsByTote = async (toteId) => {
-  const data = await readData();
-  return data.items?.filter(item => item.toteId === toteId) || [];
+  return await ItemRepository.findByToteId(toteId);
 };
 
 export const searchItems = async (query, options = {}) => {
-  const data = await readData();
-  const lowerQuery = query.toLowerCase().trim();
+  const {
+    sortBy,
+    sortOrder,
+    paginate = false,
+    page = 1,
+    limit = 10,
+  } = options;
 
-  // Search across multiple fields
-  let results = data.items?.filter(item =>
-    item.name?.toLowerCase().includes(lowerQuery) ||
-    item.description?.toLowerCase().includes(lowerQuery) ||
-    item.category?.toLowerCase().includes(lowerQuery) ||
-    item.tags?.some(tag => tag.toLowerCase().includes(lowerQuery))
-  ) || [];
-
-  // Apply sorting if requested
-  if (options.sortBy) {
-    results = sortItems(results, options.sortBy, options.sortOrder);
+  // Use repository's search method with pagination
+  if (paginate) {
+    return await ItemRepository.search(query, { page, limit });
   }
 
-  // Apply pagination if requested
-  if (options.paginate) {
-    const total = results.length;
-    const paginatedResults = paginateItems(results, options.offset, options.limit);
-    return createPaginatedResponse(paginatedResults, total, options.page, options.limit);
-  }
-
-  return results;
+  // Otherwise, get all search results
+  const result = await ItemRepository.search(query, { page: 1, limit: 1000 });
+  return result.data;
 };
-
-// Helper function to generate unique IDs
-function generateId() {
-  return Date.now().toString(36) + Math.random().toString(36).substr(2);
-}
