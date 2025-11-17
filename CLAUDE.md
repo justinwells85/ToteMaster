@@ -1,17 +1,24 @@
-# CLAUDE.md - AI Assistant Guide for ToteMaster
+# CLAUDE.md - AI Assistant Guide for Tote Master
 
-**Last Updated**: 2025-11-16
-**Project Status**: Greenfield (Initial Development Phase)
+**Last Updated**: 2025-11-17
+**Project Status**: MVP Complete
 
 ## Project Overview
 
-**ToteMaster** is a new software project in its initial development phase. This document serves as a comprehensive guide for AI assistants working on this codebase.
+**Tote Master** is a home inventory management system that helps users track items stored in totes and containers. The primary goal is to enable users to quickly locate items without having to physically search through multiple storage totes.
+
+### Core Functionality
+- Track items and their locations in storage totes
+- Search and find items quickly
+- Organize inventory by categories, locations, or custom tags
+- Web-based interface for easy access
+- Future: Mobile app for on-the-go inventory management
 
 ### Repository Information
 - **Repository**: justinwells85/ToteMaster
 - **Primary Branch**: main
 - **Development Branch Pattern**: `claude/*` for AI assistant work
-- **Current State**: Newly initialized repository with minimal structure
+- **Current State**: MVP complete with full frontend and backend
 
 ---
 
@@ -19,29 +26,43 @@
 
 ### Current Structure
 ```
-ToteMaster/
+Tote Master/
 ├── .git/                 # Git repository metadata
 ├── README.md             # Project documentation
 └── CLAUDE.md            # This file - AI assistant guide
 ```
 
-### Anticipated Structure
-As the project develops, expect the following structure to emerge:
+### Target Structure
+Monorepo structure with separate frontend and backend:
 
 ```
-ToteMaster/
-├── src/                  # Source code
-│   ├── components/       # Reusable components
-│   ├── services/         # Business logic and services
-│   ├── utils/           # Utility functions
-│   └── types/           # Type definitions
-├── tests/               # Test files
-├── docs/                # Additional documentation
-├── config/              # Configuration files
-├── public/              # Static assets (if web-based)
+Tote Master/
+├── frontend/            # React application
+│   ├── src/
+│   │   ├── components/  # React components
+│   │   ├── pages/       # Page components
+│   │   ├── hooks/       # Custom React hooks
+│   │   ├── services/    # API client services
+│   │   ├── utils/       # Utility functions
+│   │   ├── types/       # TypeScript types (optional)
+│   │   ├── App.jsx      # Main App component
+│   │   └── main.jsx     # Entry point
+│   ├── public/          # Static assets
+│   ├── package.json     # Frontend dependencies
+│   └── vite.config.js   # Vite configuration
+├── backend/             # Node.js/Express API
+│   ├── src/
+│   │   ├── routes/      # API route handlers
+│   │   ├── controllers/ # Business logic
+│   │   ├── models/      # Data models
+│   │   ├── middleware/  # Express middleware
+│   │   ├── services/    # Business services
+│   │   ├── utils/       # Utility functions
+│   │   └── server.js    # Express server entry
+│   ├── tests/           # Backend tests
+│   └── package.json     # Backend dependencies
 ├── .gitignore           # Git ignore patterns
-├── package.json         # Dependencies and scripts (if Node.js)
-├── README.md            # Project overview
+├── README.md            # Project documentation
 └── CLAUDE.md           # This guide
 ```
 
@@ -185,49 +206,163 @@ Since the project is new, AI assistants should:
 ## 📚 Project-Specific Information
 
 ### Project Purpose
-*To be documented once project scope is defined*
+**ToteMaster** is a home inventory management system designed to solve the common problem of losing track of items stored in multiple totes, boxes, and containers. Users can:
+- Add items with descriptions, photos, and custom tags
+- Assign items to specific totes or storage locations
+- Search for items by name, category, or location
+- View what's inside each tote without physically opening it
+- Track quantities and conditions of stored items
 
 ### Technology Stack
-*To be documented once technologies are chosen*
 
-**Potential Stacks**:
-- Web Application: React/Vue/Angular + Node.js/Python/etc.
-- Mobile App: React Native/Flutter/Swift/Kotlin
-- Backend Service: Node.js/Python/Go/Java
-- Desktop App: Electron/Tauri/Qt
+#### MVP (Current Phase)
+- **Frontend**: React 18+ with Vite
+  - Fast development with hot module replacement
+  - Modern JavaScript/JSX
+  - React Router for navigation
+  - Axios for API calls
+  - CSS Modules or Tailwind for styling
+
+- **Backend**: Node.js with Express
+  - RESTful API architecture
+  - JSON-based data storage initially (migrate to DB later)
+  - CORS enabled for frontend communication
+  - Environment-based configuration
+
+#### Future Migration Path
+- Backend services may be migrated to **Python** (FastAPI/Flask) or **Java** (Spring Boot)
+- Microservices architecture for scalability
+- Database: PostgreSQL or MongoDB
+- Mobile app: React Native
+
+#### Development Tools
+- **Package Manager**: npm
+- **Build Tool**: Vite (frontend), Node.js (backend)
+- **Version Control**: Git with conventional commits
+- **Code Quality**: ESLint, Prettier (to be configured)
+- **Testing**: Jest + React Testing Library (to be added)
 
 ### Dependencies
-*To be documented as dependencies are added*
+Will be added as project is initialized. Core dependencies will include:
+- **Frontend**: react, react-dom, react-router-dom, axios
+- **Backend**: express, cors, dotenv, nodemon (dev)
 
 ### Environment Setup
-*To be documented once setup process is established*
+```bash
+# Prerequisites
+- Node.js 18+ and npm
+- Git
+
+# Installation
+1. Clone the repository
+2. Install backend dependencies: cd backend && npm install
+3. Install frontend dependencies: cd frontend && npm install
+4. Set up environment variables (see .env.example files)
+
+# Running locally
+- Backend: cd backend && npm run dev
+- Frontend: cd frontend && npm run dev
+```
 
 ### Testing Strategy
-*To be documented once testing framework is chosen*
+- **Unit Tests**: Jest for business logic and utilities
+- **Component Tests**: React Testing Library for UI components
+- **Integration Tests**: Supertest for API endpoints
+- **E2E Tests**: Playwright or Cypress (future consideration)
+- **Test Coverage**: Aim for 70%+ coverage on critical paths
+
+### Database Schema (Planned)
+```
+Items
+- id (primary key)
+- name
+- description
+- category
+- toteId (foreign key)
+- quantity
+- condition
+- photo_url
+- tags (array)
+- created_at
+- updated_at
+
+Totes
+- id (primary key)
+- name
+- location
+- description
+- color/label
+- created_at
+- updated_at
+
+Categories
+- id (primary key)
+- name
+- parent_category_id (for nested categories)
+```
 
 ---
 
 ## 🔍 Common Tasks & Commands
 
 ### Development Commands
-*These will be populated once package.json or build system is established*
 
-Example placeholders:
+#### Backend (Node.js/Express)
 ```bash
-# Install dependencies
-npm install / pip install -r requirements.txt / etc.
+# Navigate to backend
+cd backend
 
-# Run development server
-npm run dev / python app.py / etc.
+# Install dependencies
+npm install
+
+# Run development server (with hot reload)
+npm run dev
+
+# Run production server
+npm start
 
 # Run tests
-npm test / pytest / etc.
+npm test
 
-# Build for production
-npm run build / etc.
+# Run tests with coverage
+npm run test:coverage
 
 # Lint code
-npm run lint / etc.
+npm run lint
+```
+
+#### Frontend (React/Vite)
+```bash
+# Navigate to frontend
+cd frontend
+
+# Install dependencies
+npm install
+
+# Run development server (usually http://localhost:5173)
+npm run dev
+
+# Build for production
+npm run build
+
+# Preview production build
+npm run preview
+
+# Run tests
+npm test
+
+# Lint code
+npm run lint
+```
+
+#### Full Stack Development
+```bash
+# Option 1: Run in separate terminals
+Terminal 1: cd backend && npm run dev
+Terminal 2: cd frontend && npm run dev
+
+# Option 2: Use concurrently (if configured)
+npm run dev (from root, if package.json configured)
 ```
 
 ### Useful Git Commands
@@ -316,6 +451,7 @@ git pull origin main
 - Record deployment procedures once established
 
 ### Version History
+- **v1.1** (2025-11-16): Updated with ToteMaster project specifics (React + Node.js stack)
 - **v1.0** (2025-11-16): Initial creation for greenfield project
 
 ---

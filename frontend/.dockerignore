@@ -1,0 +1,36 @@
+# Dependency directories
+node_modules/
+npm-debug.log*
+
+# Build output
+dist/
+build/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+
+# Tests
+tests/
+*.test.js
+*.spec.js
+
+# Documentation
+*.md
+!README.md
+
+# Logs
+logs/
+*.log
+
+# Misc
+.DS_Store

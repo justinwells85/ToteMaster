@@ -1,0 +1,33 @@
+# Dependency directories
+node_modules/
+npm-debug.log*
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Data files
+data.json
+*.db
+*.sqlite
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+
+# Tests
+tests/
+*.test.js
+
+# Documentation
+*.md
+!README.md
+
+# Logs
+logs/
+*.log

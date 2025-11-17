@@ -1,0 +1,52 @@
+# Production Docker Compose
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      target: production
+    container_name: totemaster-backend
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - LOG_LEVEL=INFO
+    env_file:
+      - ./backend/.env.production
+    networks:
+      - totemaster-network
+    restart: always
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  frontend:
+    build:
+      context: ./frontend
+      target: production
+      args:
+        - VITE_API_URL=${VITE_API_URL:-http://localhost:3000/api}
+    container_name: totemaster-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - totemaster-network
+    restart: always
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  totemaster-network:
+    driver: bridge
