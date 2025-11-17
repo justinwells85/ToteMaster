@@ -112,6 +112,158 @@ npm run dev
 
 The React app will be available at `http://localhost:5173`
 
+## Docker Deployment
+
+Tote Master includes Docker support for easy deployment to any environment.
+
+### Prerequisites for Docker
+
+- **Docker** 20.10+
+- **Docker Compose** 2.0+
+
+### Quick Start with Docker
+
+#### Development Mode
+
+Run both frontend and backend with hot-reload enabled:
+
+```bash
+# Start all services
+docker-compose up
+
+# Or run in detached mode
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop services
+docker-compose down
+```
+
+Services will be available at:
+- Frontend: `http://localhost:5173`
+- Backend: `http://localhost:3000`
+
+#### Production Mode
+
+```bash
+# Build and start production services
+docker-compose -f docker-compose.prod.yml up -d
+
+# View logs
+docker-compose -f docker-compose.prod.yml logs -f
+
+# Stop services
+docker-compose -f docker-compose.prod.yml down
+```
+
+Services will be available at:
+- Frontend: `http://localhost` (port 80)
+- Backend: `http://localhost:3000`
+
+### Environment Configuration
+
+#### For Development
+Docker Compose uses inline environment variables. No additional configuration needed.
+
+#### For Production
+
+1. **Backend**: Create `backend/.env.production`
+   ```bash
+   cp backend/.env.production.example backend/.env.production
+   ```
+
+   Edit the file with your production settings:
+   ```env
+   NODE_ENV=production
+   PORT=3000
+   LOG_LEVEL=INFO
+   # Add your production variables here
+   ```
+
+2. **Frontend**: Create `.env` in the project root
+   ```bash
+   cp .env.example .env
+   ```
+
+   Configure the API URL:
+   ```env
+   VITE_API_URL=http://localhost:3000/api
+   # Or use your production API URL
+   ```
+
+### Individual Service Deployment
+
+You can deploy frontend and backend independently:
+
+#### Backend Only
+```bash
+# Development
+docker build -t totemaster-backend --target development ./backend
+docker run -p 3000:3000 -v $(pwd)/backend:/app totemaster-backend
+
+# Production
+docker build -t totemaster-backend --target production ./backend
+docker run -p 3000:3000 --env-file ./backend/.env.production totemaster-backend
+```
+
+#### Frontend Only
+```bash
+# Development
+docker build -t totemaster-frontend --target development ./frontend
+docker run -p 5173:5173 -v $(pwd)/frontend:/app totemaster-frontend
+
+# Production
+docker build -t totemaster-frontend --target production --build-arg VITE_API_URL=http://your-api-url/api ./frontend
+docker run -p 80:80 totemaster-frontend
+```
+
+### Health Checks
+
+Production containers include health checks:
+
+```bash
+# Check service health
+docker-compose -f docker-compose.prod.yml ps
+
+# Inspect health status
+docker inspect totemaster-backend | grep -A 10 Health
+docker inspect totemaster-frontend | grep -A 10 Health
+```
+
+### Cloud Deployment
+
+The Docker setup is ready for deployment to:
+- **AWS**: ECS, EKS, or EC2
+- **Azure**: Container Instances, AKS, or App Service
+- **GCP**: Cloud Run, GKE, or Compute Engine
+- **DigitalOcean**: App Platform or Droplets
+- Any other Docker-compatible platform
+
+### Docker Commands Reference
+
+```bash
+# Rebuild containers after code changes
+docker-compose build
+
+# Rebuild without cache
+docker-compose build --no-cache
+
+# View running containers
+docker-compose ps
+
+# Execute commands in running container
+docker-compose exec backend sh
+docker-compose exec frontend sh
+
+# Remove all containers and volumes
+docker-compose down -v
+
+# View resource usage
+docker stats
+```
+
 ## API Endpoints
 
 ### Items
