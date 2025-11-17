@@ -3,6 +3,7 @@ import { jest } from '@jest/globals';
 import express from 'express';
 import cors from 'cors';
 import itemsRouter from '../src/routes/items.js';
+import { setupTestDb, cleanTestDb, closeTestDb, createTestTote } from './helpers/testDb.js';
 
 // Create a test app
 const createTestApp = () => {
@@ -16,8 +17,17 @@ const createTestApp = () => {
 describe('Items API', () => {
   let app;
 
-  beforeEach(() => {
+  beforeAll(async () => {
+    await setupTestDb();
+  });
+
+  beforeEach(async () => {
     app = createTestApp();
+    await cleanTestDb();
+  });
+
+  afterAll(async () => {
+    await closeTestDb();
   });
 
   describe('GET /api/items', () => {
@@ -90,11 +100,13 @@ describe('Items API', () => {
 
   describe('POST /api/items', () => {
     it('should create a new item with valid data', async () => {
+      const tote = await createTestTote({ name: 'Test Tote' });
+
       const newItem = {
         name: 'Test Item',
         description: 'Test description',
         category: 'Test Category',
-        toteId: 'tote-1',
+        toteId: tote.id,
         quantity: 5,
         condition: 'good',
         tags: ['test', 'item']

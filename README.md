@@ -477,11 +477,11 @@ docker compose build
 
 ## Testing
 
-Tote Master includes comprehensive testing frameworks for both frontend and backend.
+Tote Master includes comprehensive testing frameworks for both frontend and backend with PostgreSQL test database support.
 
 ### Backend Testing
 
-The backend uses **Jest** with **Supertest** for API testing.
+The backend uses **Jest** with **Supertest** for API testing and includes a test database infrastructure.
 
 ```bash
 cd backend
@@ -496,21 +496,48 @@ npm run test:watch
 npm run test:coverage
 ```
 
+**Test Infrastructure:**
+- **Test Database Helper** (`tests/helpers/testDb.js`) - Utilities for setting up/tearing down test database
+- **Automatic Schema Setup** - Runs migrations automatically for test database
+- **Test Data Fixtures** - Helper functions to create test totes and items
+- **Clean Slate Testing** - Each test runs with a fresh database state
+
 **Test Coverage:**
-- ✅ Model validation tests (Item, Tote)
-- ✅ API endpoint tests (Items, Totes)
-- 🚧 Integration tests (require data layer mocking)
+- ✅ **Model Validation** (`tests/models.test.js`) - Comprehensive validation logic tests
+- ✅ **Repository Layer** (`tests/repositories/`) - Database operations and queries
+  - `ItemRepository.test.js` - Full CRUD, search, pagination, and filtering tests
+  - `ToteRepository.test.js` - Tote operations, item counting, and relationships
+- ✅ **Service Layer** (`tests/services/`) - Business logic with mocked repositories
+  - `itemsService.test.js` - Item business logic, validation, and tote reference checks
+  - `totesService.test.js` - Tote business logic, cascade protection, and validation
+- ✅ **API Integration** (`tests/items.test.js`, `tests/totes.test.js`) - End-to-end API tests with real database
 
-**Test Files:**
-- `tests/models.test.js` - Model and validation tests
-- `tests/items.test.js` - Items API endpoint tests
-- `tests/totes.test.js` - Totes API endpoint tests
+**Test Organization:**
+```
+backend/tests/
+├── helpers/
+│   └── testDb.js              # Test database utilities
+├── repositories/
+│   ├── ItemRepository.test.js # Repository layer tests
+│   └── ToteRepository.test.js
+├── services/
+│   ├── itemsService.test.js   # Service layer tests (mocked)
+│   └── totesService.test.js
+├── models.test.js             # Model validation tests
+├── items.test.js              # Items API integration tests
+└── totes.test.js              # Totes API integration tests
+```
 
-**Note:** Integration tests currently require a properly initialized data store. Future improvements will include test database mocking for isolated testing.
+**Key Testing Features:**
+- **Test Database Isolation** - Tests run against a real PostgreSQL database with automatic cleanup
+- **Mocked Unit Tests** - Service layer tests use mocked repositories for fast execution
+- **Integration Tests** - API tests validate full request/response cycle with database
+- **Referential Integrity** - Tests validate foreign key constraints and cascade behavior
+- **Edge Cases** - Comprehensive coverage of validation errors, not found scenarios, and business rules
 
 ### Frontend Testing
 
-The frontend uses **Vitest** with **React Testing Library** for component testing.
+The frontend uses **Vitest** with **React Testing Library** for component and API testing.
 
 ```bash
 cd frontend
@@ -529,26 +556,49 @@ npm run test:coverage
 ```
 
 **Test Coverage:**
-- ✅ Component unit tests (Modal, Pagination, SearchBar)
-- 🚧 Page component tests (to be added)
-- 🚧 Service/API tests (to be added)
+- ✅ **Component Tests** (`src/components/*.test.jsx`) - UI component behavior
+  - `Modal.test.jsx` - Modal visibility, open/close, and callbacks
+  - `Pagination.test.jsx` - Page navigation, boundaries, and display
+  - `SearchBar.test.jsx` - Search input and debouncing
+- ✅ **API Service Tests** (`src/services/api.test.js`) - Mocked fetch calls
+  - Items API - CRUD operations, search, and error handling
+  - Containers API - Tote management operations
+  - Locations API - Location management
 
-**Test Files:**
-- `src/components/*.test.jsx` - Component tests
-- `src/test/setup.js` - Test configuration
+**Test Organization:**
+```
+frontend/src/
+├── components/
+│   ├── Modal.test.jsx
+│   ├── Pagination.test.jsx
+│   └── SearchBar.test.jsx
+├── services/
+│   └── api.test.js           # API client tests with mocked fetch
+└── test/
+    └── setup.js              # Vitest configuration and global setup
+```
 
 **Testing Best Practices:**
 - Write tests alongside new features
 - Aim for 70%+ test coverage on critical paths
 - Use React Testing Library's user-centric queries
-- Mock API calls in component tests
+- Mock API calls with vitest mocking utilities
+- Test user interactions and accessibility
+
+### Running Tests in CI/CD
+
+Tests are automatically run in GitHub Actions on every push and pull request:
+- Backend tests run on Node.js 18.x and 20.x
+- Frontend tests run on Node.js 18.x and 20.x
+- Coverage reports generated for code quality monitoring
 
 ### Future Testing Enhancements
 
 - [ ] E2E testing with Playwright or Cypress
-- [ ] Test database for integration tests
-- [ ] CI/CD pipeline integration
+- [ ] Frontend page component tests
 - [ ] Visual regression testing
+- [ ] Performance testing
+- [ ] Load testing for API endpoints
 
 ## Contributing
 
