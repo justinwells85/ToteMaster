@@ -2,6 +2,9 @@
 
 **Home Inventory Management System**
 
+[![CI](https://github.com/justinwells85/ToteMaster/actions/workflows/ci.yml/badge.svg)](https://github.com/justinwells85/ToteMaster/actions/workflows/ci.yml)
+[![Docker Build](https://github.com/justinwells85/ToteMaster/actions/workflows/docker.yml/badge.svg)](https://github.com/justinwells85/ToteMaster/actions/workflows/docker.yml)
+
 Tote Master is a web-based inventory management system designed to help you keep track of items stored in totes, boxes, and containers. Never lose track of your belongings again!
 
 ## Features
@@ -344,6 +347,63 @@ npm run preview
 
 # Run tests
 npm test
+```
+
+## CI/CD
+
+Tote Master uses GitHub Actions for continuous integration and deployment automation.
+
+### Automated Workflows
+
+**CI Workflow** (`.github/workflows/ci.yml`)
+- Runs on every push to `main` and all pull requests
+- Tests backend and frontend on Node.js 18.x and 20.x
+- Generates code coverage reports
+- Runs ESLint for code quality
+- Validates production builds
+- Uploads build artifacts
+
+**Docker Build Workflow** (`.github/workflows/docker.yml`)
+- Validates Docker images build successfully
+- Tests both development and production targets
+- Validates docker-compose configurations
+- Uses build caching for faster builds
+
+### Workflow Status
+
+Check the status badges at the top of this README or visit:
+- [CI Workflow Runs](https://github.com/justinwells85/ToteMaster/actions/workflows/ci.yml)
+- [Docker Build Runs](https://github.com/justinwells85/ToteMaster/actions/workflows/docker.yml)
+
+### Pull Request Checks
+
+All pull requests must pass:
+- ✅ Backend tests (Node 18.x and 20.x)
+- ✅ Frontend tests (Node 18.x and 20.x)
+- ✅ Frontend build
+- ✅ Docker image builds
+- ✅ Linting (informational)
+
+### Local Pre-Push Validation
+
+Before pushing code, you can run the same checks locally:
+
+```bash
+# Run all backend tests
+cd backend && npm test
+
+# Run all frontend tests
+cd frontend && npm test
+
+# Lint frontend code
+cd frontend && npm run lint
+
+# Build frontend
+cd frontend && npm run build
+
+# Test Docker builds
+docker compose -f docker-compose.yml config
+docker compose build
 ```
 
 ## Testing
