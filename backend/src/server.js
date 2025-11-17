@@ -3,6 +3,8 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import itemsRouter from './routes/items.js';
 import totesRouter from './routes/totes.js';
+import { requestLogger } from './middleware/logger.js';
+import logger from './utils/logger.js';
 
 // Load environment variables
 dotenv.config();
@@ -14,6 +16,7 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(requestLogger);
 
 // Routes
 app.get('/', (req, res) => {
@@ -32,7 +35,13 @@ app.use('/api/totes', totesRouter);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  logger.error('Unhandled error', {
+    error: err.message,
+    stack: err.stack,
+    path: req.path,
+    method: req.method,
+  });
+
   res.status(500).json({
     error: 'Something went wrong!',
     message: err.message,
@@ -49,7 +58,7 @@ app.use((req, res) => {
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`ToteMaster API server running on http://localhost:${PORT}`);
+  logger.info(`ToteMaster API server running on http://localhost:${PORT}`);
 });
 
 export default app;

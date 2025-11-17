@@ -1,10 +1,25 @@
 import { readData, writeData } from '../utils/dataStore.js';
 import { createItemModel } from '../models/Item.js';
 import { getToteById } from './totesService.js';
+import { sortItems, paginateItems, createPaginatedResponse } from '../utils/queryHelpers.js';
 
-export const getAllItems = async () => {
+export const getAllItems = async (options = {}) => {
   const data = await readData();
-  return data.items || [];
+  let items = data.items || [];
+
+  // Apply sorting if requested
+  if (options.sortBy) {
+    items = sortItems(items, options.sortBy, options.sortOrder);
+  }
+
+  // Apply pagination if requested
+  if (options.paginate) {
+    const total = items.length;
+    const paginatedItems = paginateItems(items, options.offset, options.limit);
+    return createPaginatedResponse(paginatedItems, total, options.page, options.limit);
+  }
+
+  return items;
 };
 
 export const getItemById = async (id) => {
@@ -89,16 +104,31 @@ export const getItemsByTote = async (toteId) => {
   return data.items?.filter(item => item.toteId === toteId) || [];
 };
 
-export const searchItems = async (query) => {
+export const searchItems = async (query, options = {}) => {
   const data = await readData();
-  const lowerQuery = query.toLowerCase();
+  const lowerQuery = query.toLowerCase().trim();
 
-  return data.items?.filter(item =>
+  // Search across multiple fields
+  let results = data.items?.filter(item =>
     item.name?.toLowerCase().includes(lowerQuery) ||
     item.description?.toLowerCase().includes(lowerQuery) ||
     item.category?.toLowerCase().includes(lowerQuery) ||
     item.tags?.some(tag => tag.toLowerCase().includes(lowerQuery))
   ) || [];
+
+  // Apply sorting if requested
+  if (options.sortBy) {
+    results = sortItems(results, options.sortBy, options.sortOrder);
+  }
+
+  // Apply pagination if requested
+  if (options.paginate) {
+    const total = results.length;
+    const paginatedResults = paginateItems(results, options.offset, options.limit);
+    return createPaginatedResponse(paginatedResults, total, options.page, options.limit);
+  }
+
+  return results;
 };
 
 // Helper function to generate unique IDs

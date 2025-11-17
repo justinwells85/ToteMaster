@@ -1,8 +1,22 @@
 import * as totesService from '../services/totesService.js';
+import { parsePagination, parseSort } from '../utils/queryHelpers.js';
 
 export const getAllTotes = async (req, res) => {
   try {
-    const totes = await totesService.getAllTotes();
+    const allowedSortFields = ['name', 'location', 'size', 'createdAt', 'updatedAt'];
+
+    // Parse query parameters
+    const pagination = parsePagination(req.query);
+    const sort = parseSort(req.query, allowedSortFields, 'createdAt');
+
+    // Build options
+    const options = {
+      ...sort,
+      paginate: req.query.page !== undefined,
+      ...pagination,
+    };
+
+    const totes = await totesService.getAllTotes(options);
     res.json(totes);
   } catch (error) {
     res.status(500).json({ error: error.message });

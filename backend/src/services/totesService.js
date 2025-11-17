@@ -1,9 +1,24 @@
 import { readData, writeData } from '../utils/dataStore.js';
 import { createToteModel } from '../models/Tote.js';
+import { sortItems, paginateItems, createPaginatedResponse } from '../utils/queryHelpers.js';
 
-export const getAllTotes = async () => {
+export const getAllTotes = async (options = {}) => {
   const data = await readData();
-  return data.totes || [];
+  let totes = data.totes || [];
+
+  // Apply sorting if requested
+  if (options.sortBy) {
+    totes = sortItems(totes, options.sortBy, options.sortOrder);
+  }
+
+  // Apply pagination if requested
+  if (options.paginate) {
+    const total = totes.length;
+    const paginatedTotes = paginateItems(totes, options.offset, options.limit);
+    return createPaginatedResponse(paginatedTotes, total, options.page, options.limit);
+  }
+
+  return totes;
 };
 
 export const getToteById = async (id) => {

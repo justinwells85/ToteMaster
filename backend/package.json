@@ -10,6 +10,8 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
+    "seed": "node src/utils/seed.js",
+    "seed:clear": "node src/utils/seed.js clear",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": ["inventory", "home-organization", "storage", "tote-management"],

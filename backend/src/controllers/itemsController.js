@@ -1,8 +1,22 @@
 import * as itemsService from '../services/itemsService.js';
+import { parsePagination, parseSort } from '../utils/queryHelpers.js';
 
 export const getAllItems = async (req, res) => {
   try {
-    const items = await itemsService.getAllItems();
+    const allowedSortFields = ['name', 'category', 'quantity', 'condition', 'createdAt', 'updatedAt'];
+
+    // Parse query parameters
+    const pagination = parsePagination(req.query);
+    const sort = parseSort(req.query, allowedSortFields, 'createdAt');
+
+    // Build options
+    const options = {
+      ...sort,
+      paginate: req.query.page !== undefined,
+      ...pagination,
+    };
+
+    const items = await itemsService.getAllItems(options);
     res.json(items);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -67,7 +81,20 @@ export const getItemsByTote = async (req, res) => {
 
 export const searchItems = async (req, res) => {
   try {
-    const items = await itemsService.searchItems(req.params.query);
+    const allowedSortFields = ['name', 'category', 'quantity', 'condition', 'createdAt', 'updatedAt'];
+
+    // Parse query parameters
+    const pagination = parsePagination(req.query);
+    const sort = parseSort(req.query, allowedSortFields, 'name');
+
+    // Build options
+    const options = {
+      ...sort,
+      paginate: req.query.page !== undefined,
+      ...pagination,
+    };
+
+    const items = await itemsService.searchItems(req.params.query, options);
     res.json(items);
   } catch (error) {
     res.status(500).json({ error: error.message });
