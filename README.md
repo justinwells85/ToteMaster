@@ -18,17 +18,20 @@ Tote Master is a web-based inventory management system designed to help you keep
 
 ## Technology Stack
 
-### MVP Phase
+### Current Implementation
 - **Frontend**: React 18 + Vite
 - **Backend**: Node.js + Express
-- **Data Storage**: JSON file-based (will migrate to database later)
+- **Database**: PostgreSQL 16
+- **Containerization**: Docker + Docker Compose
+- **Testing**: Jest (backend), Vitest (frontend)
+- **CI/CD**: GitHub Actions
 
 ### Future Roadmap
 - Migration to Python/Java microservices
-- PostgreSQL or MongoDB database
 - Mobile app (React Native)
 - Photo uploads for items
 - Barcode/QR code scanning
+- User authentication
 
 ## Project Structure
 
@@ -56,6 +59,7 @@ Tote Master/
 ## Prerequisites
 
 - **Node.js** 18+ and npm
+- **PostgreSQL** 14+ (or use Docker)
 - **Git**
 
 ## Installation
@@ -67,7 +71,34 @@ git clone https://github.com/justinwells85/Tote Master.git
 cd Tote Master
 ```
 
-### 2. Set Up Backend
+### 2. Set Up PostgreSQL Database
+
+**Option A: Using Docker (Recommended)**
+
+The easiest way is to use the provided Docker Compose setup which includes PostgreSQL:
+
+```bash
+# Start PostgreSQL container
+docker compose up postgres -d
+
+# Check if database is ready
+docker compose logs postgres
+```
+
+**Option B: Local PostgreSQL Installation**
+
+If you have PostgreSQL installed locally:
+
+1. Create a database and user:
+```sql
+CREATE DATABASE totemaster;
+CREATE USER totemaster WITH ENCRYPTED PASSWORD 'totemaster';
+GRANT ALL PRIVILEGES ON DATABASE totemaster TO totemaster;
+```
+
+2. Note your connection details for the `.env` file.
+
+### 3. Set Up Backend
 
 ```bash
 cd backend
@@ -80,13 +111,41 @@ Create a `.env` file in the `backend/` directory (copy from `.env.example`):
 cp .env.example .env
 ```
 
-Edit `.env` if needed:
-```
+Edit `.env` with your database configuration:
+```env
 PORT=3000
 NODE_ENV=development
+
+# Database Configuration
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=totemaster
+DB_USER=totemaster
+DB_PASSWORD=totemaster
 ```
 
-### 3. Set Up Frontend
+**Run Database Migrations:**
+
+```bash
+# Run migrations to create database tables
+npm run migrate
+
+# Check migration status
+npm run migrate:status
+```
+
+**Optional: Import Existing Data**
+
+If you have existing data in `data.json`:
+
+```bash
+# Import JSON data to PostgreSQL
+npm run migrate:data
+```
+
+This will import your totes and items into the database. The original `data.json` will be backed up automatically.
+
+### 4. Set Up Frontend
 
 ```bash
 cd ../frontend
@@ -94,6 +153,13 @@ npm install
 ```
 
 ## Running the Application
+
+**Important:** Make sure PostgreSQL is running before starting the backend server.
+
+If using Docker for PostgreSQL:
+```bash
+docker compose up postgres -d
+```
 
 You'll need two terminal windows to run both the backend and frontend.
 
@@ -104,7 +170,10 @@ cd backend
 npm run dev
 ```
 
-The API will be available at `http://localhost:3000`
+The backend will:
+1. Connect to PostgreSQL
+2. Run any pending migrations automatically
+3. Start the API server at `http://localhost:3000`
 
 ### Terminal 2: Start Frontend Development Server
 
@@ -503,17 +572,21 @@ We follow [Conventional Commits](https://www.conventionalcommits.org/):
 
 ## Roadmap
 
-### Phase 1 (MVP - Current)
+### Phase 1 (MVP - Complete)
 - [x] Project setup
 - [x] Basic backend API
 - [x] Basic frontend structure
-- [ ] Item CRUD operations UI
-- [ ] Tote CRUD operations UI
-- [ ] Search functionality UI
-- [ ] Basic styling
+- [x] Item CRUD operations UI
+- [x] Tote CRUD operations UI
+- [x] Search functionality UI
+- [x] Basic styling
+- [x] PostgreSQL database integration
+- [x] Database migrations system
+- [x] Comprehensive testing framework
+- [x] CI/CD with GitHub Actions
+- [x] Docker containerization
 
-### Phase 2
-- [ ] Database integration (PostgreSQL/MongoDB)
+### Phase 2 (In Progress)
 - [ ] User authentication
 - [ ] Photo uploads for items
 - [ ] Advanced search and filtering
