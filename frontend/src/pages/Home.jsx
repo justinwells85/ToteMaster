@@ -1,15 +1,15 @@
 import { useState, useEffect } from 'react';
+import { locationsApi, containersApi, itemsApi } from '../services/api';
 import { Link } from 'react-router-dom';
-import { getAllItems } from '../services/itemsService';
-import { getAllTotes } from '../services/totesService';
-import './Home.css';
+import '../styles/pages.css';
 
 function Home() {
   const [stats, setStats] = useState({
-    totalItems: 0,
-    totalTotes: 0,
-    loading: true,
+    locations: 0,
+    containers: 0,
+    items: 0,
   });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadStats();
@@ -17,92 +17,73 @@ function Home() {
 
   const loadStats = async () => {
     try {
-      const [items, totes] = await Promise.all([
-        getAllItems(),
-        getAllTotes(),
+      setLoading(true);
+      const [locations, containers, items] = await Promise.all([
+        locationsApi.getAll(),
+        containersApi.getAll(),
+        itemsApi.getAll(),
       ]);
-
       setStats({
-        totalItems: Array.isArray(items) ? items.length : 0,
-        totalTotes: Array.isArray(totes) ? totes.length : 0,
-        loading: false,
+        locations: locations.length,
+        containers: containers.length,
+        items: items.length,
       });
-    } catch (error) {
-      console.error('Error loading stats:', error);
-      setStats(prev => ({ ...prev, loading: false }));
+    } catch (err) {
+      console.error('Failed to load stats:', err);
+    } finally {
+      setLoading(false);
     }
   };
 
+  if (loading) return <div className="loading">Loading...</div>;
+
   return (
-    <div className="home-page">
-      <div className="hero">
-        <h1>Welcome to Tote Master</h1>
-        <p className="hero-subtitle">Your home inventory management solution</p>
-        <p className="hero-description">
-          Track items stored in totes and containers. Never lose track of your belongings again!
-        </p>
+    <div className="page-container">
+      <div className="home-hero">
+        <h1>Welcome to ToteMaster</h1>
+        <p>Organize and track your home inventory with ease</p>
       </div>
 
-      <div className="stats-section">
-        <h2>Quick Stats</h2>
-        <div className="stats-grid">
-          <div className="stat-card">
-            <div className="stat-number">{stats.loading ? '...' : stats.totalTotes}</div>
-            <div className="stat-label">Totes</div>
-            <Link to="/totes" className="stat-link">Manage Totes →</Link>
-          </div>
-          <div className="stat-card">
-            <div className="stat-number">{stats.loading ? '...' : stats.totalItems}</div>
-            <div className="stat-label">Items</div>
-            <Link to="/items" className="stat-link">Manage Items →</Link>
-          </div>
-        </div>
+      <div className="stats-grid">
+        <Link to="/locations" className="stat-card">
+          <div className="stat-number">{stats.locations}</div>
+          <div className="stat-label">Locations</div>
+        </Link>
+        <Link to="/containers" className="stat-card">
+          <div className="stat-number">{stats.containers}</div>
+          <div className="stat-label">Containers</div>
+        </Link>
+        <Link to="/items" className="stat-card">
+          <div className="stat-number">{stats.items}</div>
+          <div className="stat-label">Items</div>
+        </Link>
       </div>
 
-      <div className="features-section">
-        <h2>Features</h2>
-        <div className="features-grid">
-          <div className="feature-card">
-            <h3>📦 Tote Management</h3>
-            <p>Create and organize storage totes with names, locations, and labels</p>
-          </div>
-          <div className="feature-card">
-            <h3>🔍 Quick Search</h3>
-            <p>Find items instantly by name, category, or tags</p>
-          </div>
-          <div className="feature-card">
-            <h3>🏷️ Item Tracking</h3>
-            <p>Track item details including quantity, condition, and location</p>
-          </div>
-          <div className="feature-card">
-            <h3>📊 Organization</h3>
-            <p>Sort and filter items by various criteria</p>
-          </div>
-        </div>
-      </div>
-
-      <div className="quick-start">
-        <h2>Get Started</h2>
-        <div className="quick-start-steps">
+      <div className="getting-started">
+        <h2>Getting Started</h2>
+        <div className="steps">
           <div className="step">
             <div className="step-number">1</div>
             <div className="step-content">
-              <h3>Create Totes</h3>
-              <p>Add your storage containers with names and locations</p>
+              <h3>Create Locations</h3>
+              <p>Define areas in your home where you store items (e.g., Garage, Basement, Attic)</p>
+              <Link to="/locations" className="btn btn-primary">Go to Locations</Link>
             </div>
           </div>
           <div className="step">
             <div className="step-number">2</div>
             <div className="step-content">
-              <h3>Add Items</h3>
-              <p>Log items and assign them to totes</p>
+              <h3>Add Containers</h3>
+              <p>Add containers or totes to your locations to organize your storage</p>
+              <Link to="/containers" className="btn btn-primary">Go to Containers</Link>
             </div>
           </div>
           <div className="step">
             <div className="step-number">3</div>
             <div className="step-content">
-              <h3>Search & Find</h3>
-              <p>Quickly locate any item when you need it</p>
+              <h3>Track Items</h3>
+              <p>Add items to containers to keep track of what you have and where</p>
+              <Link to="/items" className="btn btn-primary">Go to Items</Link>
             </div>
           </div>
         </div>

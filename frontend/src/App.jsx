@@ -1,36 +1,32 @@
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
-import './App.css';
 import Home from './pages/Home';
+import Locations from './pages/Locations';
+import Containers from './pages/Containers';
 import Items from './pages/Items';
-import Totes from './pages/Totes';
+import './App.css';
 
 function App() {
   return (
     <Router>
-      <div className="App">
+      <div className="app">
         <nav className="navbar">
           <div className="nav-container">
-            <Link to="/" className="nav-logo">
-              Tote Master
+            <Link to="/" className="nav-brand">
+              🏠 ToteMaster
             </Link>
-            <ul className="nav-menu">
-              <li className="nav-item">
-                <Link to="/" className="nav-link">Home</Link>
-              </li>
-              <li className="nav-item">
-                <Link to="/totes" className="nav-link">Totes</Link>
-              </li>
-              <li className="nav-item">
-                <Link to="/items" className="nav-link">Items</Link>
-              </li>
-            </ul>
+            <div className="nav-links">
+              <Link to="/locations" className="nav-link">Locations</Link>
+              <Link to="/containers" className="nav-link">Containers</Link>
+              <Link to="/items" className="nav-link">Items</Link>
+            </div>
           </div>
         </nav>
-
+        
         <main className="main-content">
           <Routes>
             <Route path="/" element={<Home />} />
-            <Route path="/totes" element={<Totes />} />
+            <Route path="/locations" element={<Locations />} />
+            <Route path="/containers" element={<Containers />} />
             <Route path="/items" element={<Items />} />
           </Routes>
         </main>

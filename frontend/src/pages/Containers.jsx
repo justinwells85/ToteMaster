@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
-import { itemsApi, containersApi } from '../services/api';
+import { containersApi, locationsApi } from '../services/api';
 import '../styles/pages.css';
 
-function Items() {
-  const [items, setItems] = useState([]);
+function Containers() {
   const [containers, setContainers] = useState([]);
+  const [locations, setLocations] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
-  const [formData, setFormData] = useState({ name: '', description: '', quantity: 1, containerId: '' });
+  const [formData, setFormData] = useState({ name: '', description: '', locationId: '' });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -18,12 +18,12 @@ function Items() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [itemsData, containersData] = await Promise.all([
-        itemsApi.getAll(),
+      const [containersData, locationsData] = await Promise.all([
         containersApi.getAll(),
+        locationsApi.getAll(),
       ]);
-      setItems(itemsData);
       setContainers(containersData);
+      setLocations(locationsData);
       setError(null);
     } catch (err) {
       setError(err.message);
@@ -35,17 +35,13 @@ function Items() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const data = {
-        ...formData,
-        containerId: parseInt(formData.containerId),
-        quantity: parseInt(formData.quantity),
-      };
+      const data = { ...formData, locationId: parseInt(formData.locationId) };
       if (editingId) {
-        await itemsApi.update(editingId, data);
+        await containersApi.update(editingId, data);
       } else {
-        await itemsApi.create(data);
+        await containersApi.create(data);
       }
-      setFormData({ name: '', description: '', quantity: 1, containerId: '' });
+      setFormData({ name: '', description: '', locationId: '' });
       setShowForm(false);
       setEditingId(null);
       loadData();
@@ -54,21 +50,20 @@ function Items() {
     }
   };
 
-  const handleEdit = (item) => {
+  const handleEdit = (container) => {
     setFormData({
-      name: item.name,
-      description: item.description || '',
-      quantity: item.quantity,
-      containerId: item.containerId.toString(),
+      name: container.name,
+      description: container.description || '',
+      locationId: container.locationId.toString(),
     });
-    setEditingId(item.id);
+    setEditingId(container.id);
     setShowForm(true);
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this item?')) return;
+    if (!window.confirm('Are you sure you want to delete this container?')) return;
     try {
-      await itemsApi.delete(id);
+      await containersApi.delete(id);
       loadData();
     } catch (err) {
       setError(err.message);
@@ -76,7 +71,7 @@ function Items() {
   };
 
   const handleCancel = () => {
-    setFormData({ name: '', description: '', quantity: 1, containerId: '' });
+    setFormData({ name: '', description: '', locationId: '' });
     setShowForm(false);
     setEditingId(null);
   };
@@ -86,29 +81,29 @@ function Items() {
   return (
     <div className="page-container">
       <div className="page-header">
-        <h1>Items</h1>
+        <h1>Containers</h1>
         {!showForm && (
           <button
             className="btn btn-primary"
             onClick={() => setShowForm(true)}
-            disabled={containers.length === 0}
+            disabled={locations.length === 0}
           >
-            Add Item
+            Add Container
           </button>
         )}
       </div>
 
       {error && <div className="error-message">{error}</div>}
 
-      {containers.length === 0 && (
+      {locations.length === 0 && (
         <div className="info-message">
-          Please create at least one container before adding items.
+          Please create at least one location before adding containers.
         </div>
       )}
 
       {showForm && (
         <div className="form-container">
-          <h2>{editingId ? 'Edit Item' : 'New Item'}</h2>
+          <h2>{editingId ? 'Edit Container' : 'New Container'}</h2>
           <form onSubmit={handleSubmit}>
             <div className="form-group">
               <label>Name *</label>
@@ -120,29 +115,19 @@ function Items() {
               />
             </div>
             <div className="form-group">
-              <label>Container *</label>
+              <label>Location *</label>
               <select
-                value={formData.containerId}
-                onChange={(e) => setFormData({ ...formData, containerId: e.target.value })}
+                value={formData.locationId}
+                onChange={(e) => setFormData({ ...formData, locationId: e.target.value })}
                 required
               >
-                <option value="">Select a container</option>
-                {containers.map((container) => (
-                  <option key={container.id} value={container.id}>
-                    {container.name} ({container.location?.name})
+                <option value="">Select a location</option>
+                {locations.map((location) => (
+                  <option key={location.id} value={location.id}>
+                    {location.name}
                   </option>
                 ))}
               </select>
-            </div>
-            <div className="form-group">
-              <label>Quantity *</label>
-              <input
-                type="number"
-                min="1"
-                value={formData.quantity}
-                onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
-                required
-              />
             </div>
             <div className="form-group">
               <label>Description</label>
@@ -165,35 +150,35 @@ function Items() {
       )}
 
       <div className="card-grid">
-        {items.map((item) => (
-          <div key={item.id} className="card">
+        {containers.map((container) => (
+          <div key={container.id} className="card">
             <div className="card-header">
-              <h3>{item.name}</h3>
+              <h3>{container.name}</h3>
               <div className="card-actions">
-                <button className="btn btn-small" onClick={() => handleEdit(item)}>
+                <button className="btn btn-small" onClick={() => handleEdit(container)}>
                   Edit
                 </button>
-                <button className="btn btn-small btn-danger" onClick={() => handleDelete(item.id)}>
+                <button className="btn btn-small btn-danger" onClick={() => handleDelete(container.id)}>
                   Delete
                 </button>
               </div>
             </div>
-            {item.description && <p className="card-description">{item.description}</p>}
+            {container.description && <p className="card-description">{container.description}</p>}
             <div className="card-footer">
-              <span className="badge-quantity">Qty: {item.quantity}</span>
-              <span className="badge-location">{item.container?.name}</span>
+              <span className="badge-location">{container.location?.name}</span>
+              <span className="badge">{container.items?.length || 0} items</span>
             </div>
           </div>
         ))}
       </div>
 
-      {items.length === 0 && !showForm && containers.length > 0 && (
+      {containers.length === 0 && !showForm && locations.length > 0 && (
         <div className="empty-state">
-          <p>No items yet. Create your first item to get started!</p>
+          <p>No containers yet. Create your first container to get started!</p>
         </div>
       )}
     </div>
   );
 }
 
-export default Items;
+export default Containers;
