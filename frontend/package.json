@@ -1,7 +1,7 @@
 {
   "name": "totemaster-frontend",
   "version": "1.0.0",
-  "description": "Frontend React application for ToteMaster home inventory management system",
+  "description": "Frontend React application for Tote Master home inventory management system",
   "type": "module",
   "scripts": {
     "dev": "vite",

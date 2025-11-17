@@ -36,7 +36,7 @@ function Home() {
   return (
     <div className="home-page">
       <div className="hero">
-        <h1>Welcome to ToteMaster</h1>
+        <h1>Welcome to Tote Master</h1>
         <p className="hero-subtitle">Your home inventory management solution</p>
         <p className="hero-description">
           Track items stored in totes and containers. Never lose track of your belongings again!

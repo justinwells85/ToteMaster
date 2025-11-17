@@ -1,8 +1,8 @@
-# ToteMaster
+# Tote Master
 
 **Home Inventory Management System**
 
-ToteMaster is a web-based inventory management system designed to help you keep track of items stored in totes, boxes, and containers. Never lose track of your belongings again!
+Tote Master is a web-based inventory management system designed to help you keep track of items stored in totes, boxes, and containers. Never lose track of your belongings again!
 
 ## Features
 
@@ -30,7 +30,7 @@ ToteMaster is a web-based inventory management system designed to help you keep 
 ## Project Structure
 
 ```
-ToteMaster/
+Tote Master/
 ├── frontend/              # React application
 │   ├── src/
 │   │   ├── components/    # Reusable components
@@ -60,8 +60,8 @@ ToteMaster/
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/justinwells85/ToteMaster.git
-cd ToteMaster
+git clone https://github.com/justinwells85/Tote Master.git
+cd Tote Master
 ```
 
 ### 2. Set Up Backend

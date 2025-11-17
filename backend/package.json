@@ -1,7 +1,7 @@
 {
   "name": "totemaster-backend",
   "version": "1.0.0",
-  "description": "Backend API for ToteMaster home inventory management system",
+  "description": "Backend API for Tote Master home inventory management system",
   "main": "src/server.js",
   "type": "module",
   "directories": {

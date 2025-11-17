@@ -21,7 +21,7 @@ app.use(requestLogger);
 // Routes
 app.get('/', (req, res) => {
   res.json({
-    message: 'ToteMaster API',
+    message: 'Tote Master API',
     version: '1.0.0',
     endpoints: {
       items: '/api/items',
@@ -58,7 +58,7 @@ app.use((req, res) => {
 
 // Start server
 app.listen(PORT, () => {
-  logger.info(`ToteMaster API server running on http://localhost:${PORT}`);
+  logger.info(`Tote Master API server running on http://localhost:${PORT}`);
 });
 
 export default app;
