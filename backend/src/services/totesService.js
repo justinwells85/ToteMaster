@@ -1,97 +1,62 @@
-import { readData, writeData } from '../utils/dataStore.js';
-import { createToteModel } from '../models/Tote.js';
-import { sortItems, paginateItems, createPaginatedResponse } from '../utils/queryHelpers.js';
+import ToteRepository from '../db/repositories/ToteRepository.js';
+import { validateTote } from '../models/Tote.js';
 
 export const getAllTotes = async (options = {}) => {
-  const data = await readData();
-  let totes = data.totes || [];
-
-  // Apply sorting if requested
-  if (options.sortBy) {
-    totes = sortItems(totes, options.sortBy, options.sortOrder);
-  }
-
-  // Apply pagination if requested
-  if (options.paginate) {
-    const total = totes.length;
-    const paginatedTotes = paginateItems(totes, options.offset, options.limit);
-    return createPaginatedResponse(paginatedTotes, total, options.page, options.limit);
-  }
-
-  return totes;
+  return await ToteRepository.findAll();
 };
 
 export const getToteById = async (id) => {
-  const data = await readData();
-  return data.totes?.find(tote => tote.id === id);
+  return await ToteRepository.findById(id);
 };
 
 export const createTote = async (toteData) => {
-  const data = await readData();
-
-  if (!data.totes) {
-    data.totes = [];
+  // Validate tote data
+  const validation = validateTote(toteData);
+  if (!validation.valid) {
+    const error = new Error('Validation failed');
+    error.details = validation.errors;
+    throw error;
   }
 
-  // Create tote using model
-  const toteModel = createToteModel(toteData);
-
-  const newTote = {
-    id: generateId(),
-    ...toteModel,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  };
-
-  data.totes.push(newTote);
-  await writeData(data);
-
-  return newTote;
+  // Create tote in database
+  return await ToteRepository.create(toteData);
 };
 
 export const updateTote = async (id, toteData) => {
-  const data = await readData();
-  const index = data.totes?.findIndex(tote => tote.id === id);
+  // Validate update data
+  const validation = validateTote(toteData, true); // true = isUpdate
+  if (!validation.valid) {
+    const error = new Error('Validation failed');
+    error.details = validation.errors;
+    throw error;
+  }
 
-  if (index === -1 || index === undefined) {
+  // Check if tote exists
+  const existingTote = await ToteRepository.findById(id);
+  if (!existingTote) {
     return null;
   }
 
-  data.totes[index] = {
-    ...data.totes[index],
-    ...toteData,
-    id, // Preserve the original ID
-    createdAt: data.totes[index].createdAt, // Preserve creation date
-    updatedAt: new Date().toISOString(),
-  };
-
-  await writeData(data);
-  return data.totes[index];
+  // Update tote in database
+  return await ToteRepository.update(id, toteData);
 };
 
 export const deleteTote = async (id) => {
-  const data = await readData();
-  const index = data.totes?.findIndex(tote => tote.id === id);
-
-  if (index === -1 || index === undefined) {
+  // Check if tote exists
+  const existingTote = await ToteRepository.findById(id);
+  if (!existingTote) {
     return false;
   }
 
   // Business logic validation: check if tote has items
-  const itemsInTote = data.items?.filter(item => item.toteId === id) || [];
-  if (itemsInTote.length > 0) {
+  const itemCount = await ToteRepository.countItems(id);
+  if (itemCount > 0) {
     throw new Error(
-      `Cannot delete tote: it contains ${itemsInTote.length} item(s). ` +
+      `Cannot delete tote: it contains ${itemCount} item(s). ` +
       'Please remove or reassign items before deleting the tote.'
     );
   }
 
-  data.totes.splice(index, 1);
-  await writeData(data);
-  return true;
+  // Delete tote from database
+  return await ToteRepository.delete(id);
 };
-
-// Helper function to generate unique IDs
-function generateId() {
-  return Date.now().toString(36) + Math.random().toString(36).substr(2);
-}
