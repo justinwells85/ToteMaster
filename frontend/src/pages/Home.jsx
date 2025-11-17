@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { getAllItems } from '../services/itemsService';
 import { getAllTotes } from '../services/totesService';
+import './Home.css';
 
 function Home() {
   const [stats, setStats] = useState({
