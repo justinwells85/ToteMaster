@@ -2,6 +2,28 @@
 version: '3.8'
 
 services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: totemaster-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=${DB_NAME:-totemaster}
+      - POSTGRES_USER=${DB_USER:-totemaster}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:?Database password required}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./backups:/backups
+    networks:
+      - totemaster-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-totemaster}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: always
+
   backend:
     build:
       context: ./backend
@@ -15,6 +37,9 @@ services:
       - LOG_LEVEL=INFO
     env_file:
       - ./backend/.env.production
+    depends_on:
+      postgres:
+        condition: service_healthy
     networks:
       - totemaster-network
     restart: always
@@ -46,6 +71,9 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+
+volumes:
+  postgres-data:
 
 networks:
   totemaster-network:
