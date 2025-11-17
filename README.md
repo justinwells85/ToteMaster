@@ -326,7 +326,7 @@ npm run dev
 # Run production mode
 npm start
 
-# Run tests (when implemented)
+# Run tests
 npm test
 ```
 
@@ -342,16 +342,84 @@ npm run build
 # Preview production build
 npm run preview
 
-# Run tests (when implemented)
+# Run tests
 npm test
 ```
 
 ## Testing
 
-Testing frameworks will be added in future iterations:
-- **Backend**: Jest + Supertest
-- **Frontend**: Jest + React Testing Library
-- **E2E**: Playwright or Cypress
+Tote Master includes comprehensive testing frameworks for both frontend and backend.
+
+### Backend Testing
+
+The backend uses **Jest** with **Supertest** for API testing.
+
+```bash
+cd backend
+
+# Run all tests
+npm test
+
+# Run tests in watch mode
+npm run test:watch
+
+# Run tests with coverage report
+npm run test:coverage
+```
+
+**Test Coverage:**
+- ✅ Model validation tests (Item, Tote)
+- ✅ API endpoint tests (Items, Totes)
+- 🚧 Integration tests (require data layer mocking)
+
+**Test Files:**
+- `tests/models.test.js` - Model and validation tests
+- `tests/items.test.js` - Items API endpoint tests
+- `tests/totes.test.js` - Totes API endpoint tests
+
+**Note:** Integration tests currently require a properly initialized data store. Future improvements will include test database mocking for isolated testing.
+
+### Frontend Testing
+
+The frontend uses **Vitest** with **React Testing Library** for component testing.
+
+```bash
+cd frontend
+
+# Run all tests
+npm test
+
+# Run tests in watch mode (interactive)
+npm run test
+
+# Run tests with UI
+npm run test:ui
+
+# Run tests with coverage report
+npm run test:coverage
+```
+
+**Test Coverage:**
+- ✅ Component unit tests (Modal, Pagination, SearchBar)
+- 🚧 Page component tests (to be added)
+- 🚧 Service/API tests (to be added)
+
+**Test Files:**
+- `src/components/*.test.jsx` - Component tests
+- `src/test/setup.js` - Test configuration
+
+**Testing Best Practices:**
+- Write tests alongside new features
+- Aim for 70%+ test coverage on critical paths
+- Use React Testing Library's user-centric queries
+- Mock API calls in component tests
+
+### Future Testing Enhancements
+
+- [ ] E2E testing with Playwright or Cypress
+- [ ] Test database for integration tests
+- [ ] CI/CD pipeline integration
+- [ ] Visual regression testing
 
 ## Contributing
 
