@@ -1,55 +1,89 @@
-# ToteMaster
+# Tote Master
 
-A comprehensive home inventory management system that helps you organize and track items stored in containers throughout your house. Built with ASP.NET Core and React, designed to run on Windows machines and be accessible over your home network.
+**Home Inventory Management System**
 
-![ToteMaster Home](https://github.com/user-attachments/assets/bbf44f73-8a75-42ac-967b-6654bbae95f0)
+Tote Master is a web-based inventory management system designed to help you keep track of items stored in totes, boxes, and containers. Never lose track of your belongings again!
 
 ## Features
 
-- **📍 Locations Management**: Create and manage designated storage areas in your home (e.g., Garage, Basement, Attic)
-- **📦 Container Tracking**: Organize your storage by associating containers (totes, boxes) with specific locations
-- **📝 Item Inventory**: Keep detailed records of items stored in each container with descriptions and quantities
-- **🔍 Visual Organization**: Clean, intuitive interface with card-based layouts for easy browsing
-- **🔗 Hierarchical Structure**: Items → Containers → Locations for logical organization
-- **✨ Real-time Updates**: Instant feedback on all CRUD operations
+- **Item Management**: Add, edit, and delete items with descriptions, categories, and tags
+- **Tote Organization**: Create and manage storage totes/containers
+- **Quick Search**: Find items instantly by name, category, or tags
+- **Location Tracking**: Know exactly which tote contains each item
+- **RESTful API**: Clean API architecture for easy integration
+- **Modern UI**: React-based frontend with responsive design
 
 ## Technology Stack
 
-### Backend
-- **ASP.NET Core 10.0** - Web API framework
-- **Entity Framework Core** - ORM for database operations
-- **SQLite** - Lightweight, file-based database (no separate server needed)
+### MVP Phase
+- **Frontend**: React 18 + Vite
+- **Backend**: Node.js + Express
+- **Data Storage**: JSON file-based (will migrate to database later)
 
-### Frontend
-- **React 18** - UI framework
-- **React Router** - Client-side routing
-- **Vite** - Fast build tool and dev server
-- **Modern CSS** - Responsive design with custom styling
+### Future Roadmap
+- Migration to Python/Java microservices
+- PostgreSQL or MongoDB database
+- Mobile app (React Native)
+- Photo uploads for items
+- Barcode/QR code scanning
+
+## Project Structure
+
+```
+Tote Master/
+├── frontend/              # React application
+│   ├── src/
+│   │   ├── components/    # Reusable components
+│   │   ├── pages/         # Page components
+│   │   ├── services/      # API client
+│   │   └── ...
+│   └── package.json
+├── backend/               # Express API
+│   ├── src/
+│   │   ├── routes/        # API routes
+│   │   ├── controllers/   # Request handlers
+│   │   ├── services/      # Business logic
+│   │   ├── models/        # Data models
+│   │   └── utils/         # Utilities
+│   └── package.json
+├── CLAUDE.md             # AI assistant guide
+└── README.md             # This file
+```
 
 ## Prerequisites
 
-- **.NET 10.0 SDK** - [Download here](https://dotnet.microsoft.com/download)
-- **Node.js 18+** - [Download here](https://nodejs.org/)
-- **Windows OS** - Recommended for hosting
+- **Node.js** 18+ and npm
+- **Git**
 
-## Installation & Setup
+## Installation
 
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/justinwells85/ToteMaster.git
-cd ToteMaster
+git clone https://github.com/justinwells85/Tote Master.git
+cd Tote Master
 ```
 
-### 2. Set Up the Backend API
+### 2. Set Up Backend
 
 ```bash
-cd ToteMasterAPI
-dotnet restore
-dotnet build
+cd backend
+npm install
 ```
 
-### 3. Set Up the Frontend
+Create a `.env` file in the `backend/` directory (copy from `.env.example`):
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env` if needed:
+```
+PORT=3000
+NODE_ENV=development
+```
+
+### 3. Set Up Frontend
 
 ```bash
 cd ../frontend
@@ -58,241 +92,320 @@ npm install
 
 ## Running the Application
 
-### Development Mode
+You'll need two terminal windows to run both the backend and frontend.
 
-You'll need to run both the backend API and frontend development server.
+### Terminal 1: Start Backend Server
 
-**Terminal 1 - Start the API:**
 ```bash
-cd ToteMasterAPI
-dotnet run
+cd backend
+npm run dev
 ```
-The API will be available at `http://localhost:5000`
 
-**Terminal 2 - Start the Frontend:**
+The API will be available at `http://localhost:3000`
+
+### Terminal 2: Start Frontend Development Server
+
 ```bash
 cd frontend
 npm run dev
 ```
-The frontend will be available at `http://localhost:5173`
 
-### Production Build
+The React app will be available at `http://localhost:5173`
 
-**Build the Frontend:**
+## Docker Deployment
+
+Tote Master includes Docker support for easy deployment to any environment.
+
+### Prerequisites for Docker
+
+- **Docker** 20.10+
+- **Docker Compose** 2.0+
+
+### Quick Start with Docker
+
+#### Development Mode
+
+Run both frontend and backend with hot-reload enabled:
+
 ```bash
-cd frontend
-npm run build
+# Start all services
+docker-compose up
+
+# Or run in detached mode
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop services
+docker-compose down
 ```
 
-The production build will be created in `frontend/dist/` directory.
+Services will be available at:
+- Frontend: `http://localhost:5173`
+- Backend: `http://localhost:3000`
 
-**Run the API in Production:**
+#### Production Mode
+
 ```bash
-cd ToteMasterAPI
-dotnet run --configuration Release
+# Build and start production services
+docker-compose -f docker-compose.prod.yml up -d
+
+# View logs
+docker-compose -f docker-compose.prod.yml logs -f
+
+# Stop services
+docker-compose -f docker-compose.prod.yml down
 ```
 
-## Accessing Over Home Network
+Services will be available at:
+- Frontend: `http://localhost` (port 80)
+- Backend: `http://localhost:3000`
 
-To access ToteMaster from other devices on your home network:
+### Environment Configuration
 
-### 1. Find Your Computer's Local IP Address
+#### For Development
+Docker Compose uses inline environment variables. No additional configuration needed.
 
-**Windows:**
+#### For Production
+
+1. **Backend**: Create `backend/.env.production`
+   ```bash
+   cp backend/.env.production.example backend/.env.production
+   ```
+
+   Edit the file with your production settings:
+   ```env
+   NODE_ENV=production
+   PORT=3000
+   LOG_LEVEL=INFO
+   # Add your production variables here
+   ```
+
+2. **Frontend**: Create `.env` in the project root
+   ```bash
+   cp .env.example .env
+   ```
+
+   Configure the API URL:
+   ```env
+   VITE_API_URL=http://localhost:3000/api
+   # Or use your production API URL
+   ```
+
+### Individual Service Deployment
+
+You can deploy frontend and backend independently:
+
+#### Backend Only
 ```bash
-ipconfig
-```
-Look for "IPv4 Address" under your active network connection (e.g., `192.168.1.100`)
+# Development
+docker build -t totemaster-backend --target development ./backend
+docker run -p 3000:3000 -v $(pwd)/backend:/app totemaster-backend
 
-### 2. Configure the Backend
-
-Update `ToteMasterAPI/Properties/launchSettings.json` to listen on all interfaces:
-
-```json
-"applicationUrl": "http://0.0.0.0:5000"
+# Production
+docker build -t totemaster-backend --target production ./backend
+docker run -p 3000:3000 --env-file ./backend/.env.production totemaster-backend
 ```
 
-Or run with the URL parameter:
+#### Frontend Only
 ```bash
-dotnet run --urls "http://0.0.0.0:5000"
+# Development
+docker build -t totemaster-frontend --target development ./frontend
+docker run -p 5173:5173 -v $(pwd)/frontend:/app totemaster-frontend
+
+# Production
+docker build -t totemaster-frontend --target production --build-arg VITE_API_URL=http://your-api-url/api ./frontend
+docker run -p 80:80 totemaster-frontend
 ```
 
-### 3. Configure Windows Firewall
+### Health Checks
 
-Allow incoming connections on port 5000:
-```powershell
-netsh advfirewall firewall add rule name="ToteMaster API" dir=in action=allow protocol=TCP localport=5000
+Production containers include health checks:
+
+```bash
+# Check service health
+docker-compose -f docker-compose.prod.yml ps
+
+# Inspect health status
+docker inspect totemaster-backend | grep -A 10 Health
+docker inspect totemaster-frontend | grep -A 10 Health
 ```
 
-### 4. Access from Other Devices
+### Cloud Deployment
 
-From any device on your home network, navigate to:
-```
-http://[YOUR_IP_ADDRESS]:5173
-```
+The Docker setup is ready for deployment to:
+- **AWS**: ECS, EKS, or EC2
+- **Azure**: Container Instances, AKS, or App Service
+- **GCP**: Cloud Run, GKE, or Compute Engine
+- **DigitalOcean**: App Platform or Droplets
+- Any other Docker-compatible platform
 
-For example: `http://192.168.1.100:5173`
+### Docker Commands Reference
 
-## Project Structure
+```bash
+# Rebuild containers after code changes
+docker-compose build
 
-```
-ToteMaster/
-├── ToteMasterAPI/              # Backend ASP.NET Core API
-│   ├── Controllers/            # API endpoints
-│   │   ├── LocationsController.cs
-│   │   ├── ContainersController.cs
-│   │   └── ItemsController.cs
-│   ├── Models/                 # Data models
-│   │   ├── Location.cs
-│   │   ├── Container.cs
-│   │   └── Item.cs
-│   ├── Data/                   # Database context
-│   │   └── ToteMasterContext.cs
-│   ├── Program.cs              # Application entry point
-│   └── appsettings.json        # Configuration
-│
-├── frontend/                   # React frontend application
-│   ├── src/
-│   │   ├── pages/              # Page components
-│   │   │   ├── Home.jsx
-│   │   │   ├── Locations.jsx
-│   │   │   ├── Containers.jsx
-│   │   │   └── Items.jsx
-│   │   ├── services/           # API integration
-│   │   │   └── api.js
-│   │   ├── styles/             # CSS styling
-│   │   │   └── pages.css
-│   │   ├── App.jsx             # Main application component
-│   │   └── main.jsx            # Application entry point
-│   └── package.json
-│
-└── README.md
+# Rebuild without cache
+docker-compose build --no-cache
+
+# View running containers
+docker-compose ps
+
+# Execute commands in running container
+docker-compose exec backend sh
+docker-compose exec frontend sh
+
+# Remove all containers and volumes
+docker-compose down -v
+
+# View resource usage
+docker stats
 ```
 
 ## API Endpoints
 
-### Locations
-- `GET /api/locations` - Get all locations
-- `GET /api/locations/{id}` - Get location by ID
-- `POST /api/locations` - Create new location
-- `PUT /api/locations/{id}` - Update location
-- `DELETE /api/locations/{id}` - Delete location
-
-### Containers
-- `GET /api/containers` - Get all containers
-- `GET /api/containers/{id}` - Get container by ID
-- `POST /api/containers` - Create new container
-- `PUT /api/containers/{id}` - Update container
-- `DELETE /api/containers/{id}` - Delete container
-
 ### Items
+
 - `GET /api/items` - Get all items
-- `GET /api/items/{id}` - Get item by ID
+- `GET /api/items/:id` - Get item by ID
 - `POST /api/items` - Create new item
-- `PUT /api/items/{id}` - Update item
-- `DELETE /api/items/{id}` - Delete item
+- `PUT /api/items/:id` - Update item
+- `DELETE /api/items/:id` - Delete item
+- `GET /api/items/tote/:toteId` - Get items in a specific tote
+- `GET /api/items/search/:query` - Search items
 
-## Database
+### Totes
 
-ToteMaster uses SQLite for data storage. The database file (`totemaster.db`) is automatically created in the `ToteMasterAPI` directory when the application first runs.
+- `GET /api/totes` - Get all totes
+- `GET /api/totes/:id` - Get tote by ID
+- `POST /api/totes` - Create new tote
+- `PUT /api/totes/:id` - Update tote
+- `DELETE /api/totes/:id` - Delete tote
 
-### Schema
+## Data Models
 
-**Locations**
-- Id (Primary Key)
-- Name
-- Description
-- CreatedAt
-- UpdatedAt
-
-**Containers**
-- Id (Primary Key)
-- Name
-- Description
-- LocationId (Foreign Key)
-- CreatedAt
-- UpdatedAt
-
-**Items**
-- Id (Primary Key)
-- Name
-- Description
-- Quantity
-- ContainerId (Foreign Key)
-- CreatedAt
-- UpdatedAt
-
-## Usage Guide
-
-### Getting Started
-
-1. **Create Locations**: Start by defining areas in your home where you store items
-   - Example: Garage, Basement, Attic, Closet
-
-2. **Add Containers**: Create containers (totes, boxes) and assign them to locations
-   - Example: "Blue Tote #1" in "Garage"
-
-3. **Track Items**: Add items to containers with descriptions and quantities
-   - Example: "Christmas Decorations" in "Blue Tote #1"
-
-### Screenshots
-
-**Home Page**
-![Home Page](https://github.com/user-attachments/assets/bbf44f73-8a75-42ac-967b-6654bbae95f0)
-
-**Locations Management**
-![Locations](https://github.com/user-attachments/assets/ddb376ae-c054-4ca6-ae01-5c06aa009050)
-
-**Containers Management**
-![Containers](https://github.com/user-attachments/assets/3217f62e-ba12-481b-a30e-25d18e8eece5)
-
-**Items Management**
-![Items](https://github.com/user-attachments/assets/827e797e-e96d-4995-998a-9991abb8b1e5)
-
-## Troubleshooting
-
-### Backend Issues
-
-**Database locked error:**
-- Close any database browser tools that may have the database open
-- Restart the API
-
-**Port already in use:**
-- Change the port in `appsettings.json` or use `--urls` parameter
-```bash
-dotnet run --urls "http://localhost:5001"
+### Item
+```json
+{
+  "id": "unique-id",
+  "name": "Item name",
+  "description": "Item description",
+  "category": "Category name",
+  "toteId": "tote-id",
+  "quantity": 1,
+  "condition": "good",
+  "tags": ["tag1", "tag2"],
+  "createdAt": "ISO-8601 timestamp",
+  "updatedAt": "ISO-8601 timestamp"
+}
 ```
 
-### Frontend Issues
+### Tote
+```json
+{
+  "id": "unique-id",
+  "name": "Tote name",
+  "location": "Storage location",
+  "description": "Description",
+  "color": "blue",
+  "createdAt": "ISO-8601 timestamp",
+  "updatedAt": "ISO-8601 timestamp"
+}
+```
 
-**API connection errors:**
-- Verify the backend is running
-- Check the proxy configuration in `vite.config.js`
-- Ensure CORS is properly configured
+## Development
 
-**Build errors:**
-- Delete `node_modules` and reinstall: `npm install`
-- Clear the build cache: `npm run build -- --force`
+### Backend Development
 
-## Future Enhancements
+```bash
+# Run with auto-reload
+npm run dev
 
-- 🔍 Search and filter functionality
-- 📸 Photo upload for items
-- 🏷️ Tags and categories
-- 📊 Statistics and reports
-- 📱 Mobile-responsive design improvements
-- 🔐 User authentication (multi-user support)
-- 💾 Backup and restore functionality
-- 📤 Export to CSV/Excel
+# Run production mode
+npm start
+
+# Run tests (when implemented)
+npm test
+```
+
+### Frontend Development
+
+```bash
+# Development server
+npm run dev
+
+# Build for production
+npm run build
+
+# Preview production build
+npm run preview
+
+# Run tests (when implemented)
+npm test
+```
+
+## Testing
+
+Testing frameworks will be added in future iterations:
+- **Backend**: Jest + Supertest
+- **Frontend**: Jest + React Testing Library
+- **E2E**: Playwright or Cypress
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes using conventional commits (`git commit -m 'feat: add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+### Commit Message Convention
+
+We follow [Conventional Commits](https://www.conventionalcommits.org/):
+
+- `feat:` - New feature
+- `fix:` - Bug fix
+- `docs:` - Documentation changes
+- `style:` - Code style changes (formatting)
+- `refactor:` - Code refactoring
+- `test:` - Adding tests
+- `chore:` - Maintenance tasks
+
+## Roadmap
+
+### Phase 1 (MVP - Current)
+- [x] Project setup
+- [x] Basic backend API
+- [x] Basic frontend structure
+- [ ] Item CRUD operations UI
+- [ ] Tote CRUD operations UI
+- [ ] Search functionality UI
+- [ ] Basic styling
+
+### Phase 2
+- [ ] Database integration (PostgreSQL/MongoDB)
+- [ ] User authentication
+- [ ] Photo uploads for items
+- [ ] Advanced search and filtering
+- [ ] Data export (CSV/PDF)
+
+### Phase 3
+- [ ] Mobile app (React Native)
+- [ ] Barcode/QR code scanning
+- [ ] Multi-user support
+- [ ] Cloud deployment
+- [ ] Microservices architecture
 
 ## License
 
-This project is open source and available under the MIT License.
+MIT
 
 ## Support
 
-For issues, questions, or suggestions, please open an issue on GitHub.
+For issues, questions, or contributions, please open an issue on GitHub.
+
+---
+
+**Made with ❤️ for better home organization**
