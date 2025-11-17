@@ -1,15 +1,15 @@
 import ToteRepository from '../db/repositories/ToteRepository.js';
 import { validateTote } from '../models/Tote.js';
 
-export const getAllTotes = async (options = {}) => {
-  return await ToteRepository.findAll();
+export const getAllTotes = async (userId) => {
+  return await ToteRepository.findAll(userId);
 };
 
-export const getToteById = async (id) => {
-  return await ToteRepository.findById(id);
+export const getToteById = async (id, userId) => {
+  return await ToteRepository.findById(id, userId);
 };
 
-export const createTote = async (toteData) => {
+export const createTote = async (toteData, userId) => {
   // Validate tote data
   const validation = validateTote(toteData);
   if (!validation.valid) {
@@ -18,11 +18,17 @@ export const createTote = async (toteData) => {
     throw error;
   }
 
+  // Add userId to tote data
+  const toteWithUser = {
+    ...toteData,
+    userId,
+  };
+
   // Create tote in database
-  return await ToteRepository.create(toteData);
+  return await ToteRepository.create(toteWithUser);
 };
 
-export const updateTote = async (id, toteData) => {
+export const updateTote = async (id, toteData, userId) => {
   // Validate update data
   const validation = validateTote(toteData, true); // true = isUpdate
   if (!validation.valid) {
@@ -31,25 +37,25 @@ export const updateTote = async (id, toteData) => {
     throw error;
   }
 
-  // Check if tote exists
-  const existingTote = await ToteRepository.findById(id);
+  // Check if tote exists and belongs to user
+  const existingTote = await ToteRepository.findById(id, userId);
   if (!existingTote) {
     return null;
   }
 
-  // Update tote in database
-  return await ToteRepository.update(id, toteData);
+  // Update tote in database (userId ensures only user's totes can be updated)
+  return await ToteRepository.update(id, toteData, userId);
 };
 
-export const deleteTote = async (id) => {
-  // Check if tote exists
-  const existingTote = await ToteRepository.findById(id);
+export const deleteTote = async (id, userId) => {
+  // Check if tote exists and belongs to user
+  const existingTote = await ToteRepository.findById(id, userId);
   if (!existingTote) {
     return false;
   }
 
-  // Business logic validation: check if tote has items
-  const itemCount = await ToteRepository.countItems(id);
+  // Business logic validation: check if tote has items (belonging to this user)
+  const itemCount = await ToteRepository.countItems(id, userId);
   if (itemCount > 0) {
     throw new Error(
       `Cannot delete tote: it contains ${itemCount} item(s). ` +
@@ -57,6 +63,10 @@ export const deleteTote = async (id) => {
     );
   }
 
-  // Delete tote from database
-  return await ToteRepository.delete(id);
+  // Delete tote from database (userId ensures only user's totes can be deleted)
+  return await ToteRepository.delete(id, userId);
+};
+
+export const getToteItems = async (toteId, userId) => {
+  return await ToteRepository.getItemsInTote(toteId, userId);
 };

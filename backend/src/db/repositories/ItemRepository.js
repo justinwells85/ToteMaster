@@ -12,6 +12,7 @@ class ItemRepository {
    */
   async findAll(options = {}) {
     const {
+      userId,
       toteId,
       category,
       page = 1,
@@ -25,7 +26,11 @@ class ItemRepository {
     const values = [];
     let paramCount = 1;
 
-    // Build WHERE clause
+    // Build WHERE clause - always filter by userId if provided
+    if (userId) {
+      filters.push(`user_id = $${paramCount++}`);
+      values.push(userId);
+    }
     if (toteId) {
       filters.push(`tote_id = $${paramCount++}`);
       values.push(toteId);
@@ -74,52 +79,68 @@ class ItemRepository {
   /**
    * Get item by ID
    * @param {string} id - Item ID
+   * @param {string} userId - User ID (optional, for access control)
    * @returns {Promise<Object|null>} - Item object or null
    */
-  async findById(id) {
-    const result = await db.query(
-      'SELECT * FROM items WHERE id = $1',
-      [id]
-    );
+  async findById(id, userId = null) {
+    let query = 'SELECT * FROM items WHERE id = $1';
+    const params = [id];
+
+    if (userId) {
+      query += ' AND user_id = $2';
+      params.push(userId);
+    }
+
+    const result = await db.query(query, params);
     return result.rows[0] ? this.mapToCamelCase(result.rows[0]) : null;
   }
 
   /**
    * Search items by query
    * @param {string} query - Search query
-   * @param {Object} options - Pagination options
+   * @param {Object} options - Pagination options (page, limit, userId)
    * @returns {Promise<Object>} - Search results with pagination
    */
   async search(query, options = {}) {
-    const { page = 1, limit = 10 } = options;
+    const { page = 1, limit = 10, userId } = options;
     const offset = (page - 1) * limit;
     const searchTerm = `%${query.toLowerCase()}%`;
+
+    // Build user filter
+    const userFilter = userId ? 'AND user_id = $4' : '';
+    const params = [searchTerm];
+
+    if (userId) {
+      params.push(userId);
+    }
 
     // Search in name, description, category, and tags
     const countQuery = `
       SELECT COUNT(*) as count
       FROM items
-      WHERE LOWER(name) LIKE $1
+      WHERE (LOWER(name) LIKE $1
          OR LOWER(description) LIKE $1
          OR LOWER(category) LIKE $1
          OR EXISTS (
            SELECT 1 FROM unnest(tags) AS tag
            WHERE LOWER(tag) LIKE $1
-         )
+         ))
+      ${userFilter}
     `;
-    const countResult = await db.query(countQuery, [searchTerm]);
+    const countResult = await db.query(countQuery, userId ? [searchTerm, userId] : [searchTerm]);
     const total = parseInt(countResult.rows[0].count, 10);
 
     const dataQuery = `
       SELECT *
       FROM items
-      WHERE LOWER(name) LIKE $1
+      WHERE (LOWER(name) LIKE $1
          OR LOWER(description) LIKE $1
          OR LOWER(category) LIKE $1
          OR EXISTS (
            SELECT 1 FROM unnest(tags) AS tag
            WHERE LOWER(tag) LIKE $1
-         )
+         ))
+      ${userFilter}
       ORDER BY
         CASE WHEN LOWER(name) LIKE $1 THEN 1
              WHEN LOWER(category) LIKE $1 THEN 2
@@ -128,7 +149,8 @@ class ItemRepository {
         name
       LIMIT $2 OFFSET $3
     `;
-    const dataResult = await db.query(dataQuery, [searchTerm, limit, offset]);
+    const dataParams = userId ? [searchTerm, limit, offset, userId] : [searchTerm, limit, offset];
+    const dataResult = await db.query(dataQuery, dataParams);
 
     const items = dataResult.rows.map(row => this.mapToCamelCase(row));
 
@@ -147,7 +169,7 @@ class ItemRepository {
 
   /**
    * Create a new item
-   * @param {Object} itemData - Item data
+   * @param {Object} itemData - Item data (must include userId)
    * @returns {Promise<Object>} - Created item
    */
   async create(itemData) {
@@ -155,8 +177,8 @@ class ItemRepository {
     const now = new Date().toISOString();
 
     const result = await db.query(
-      `INSERT INTO items (id, name, description, category, tote_id, quantity, condition, tags, photo_url, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      `INSERT INTO items (id, name, description, category, tote_id, quantity, condition, tags, photo_url, user_id, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
        RETURNING *`,
       [
         id,
@@ -168,6 +190,7 @@ class ItemRepository {
         itemData.condition || 'good',
         itemData.tags || [],
         itemData.photoUrl || null,
+        itemData.userId || null,
         itemData.createdAt || now,
         itemData.updatedAt || now,
       ]
@@ -180,9 +203,10 @@ class ItemRepository {
    * Update an item
    * @param {string} id - Item ID
    * @param {Object} updates - Fields to update
+   * @param {string} userId - User ID (for access control)
    * @returns {Promise<Object|null>} - Updated item or null
    */
-  async update(id, updates) {
+  async update(id, updates, userId = null) {
     const fields = [];
     const values = [];
     let paramCount = 1;
@@ -223,16 +247,24 @@ class ItemRepository {
 
     if (fields.length === 0) {
       // No updates provided
-      return await this.findById(id);
+      return await this.findById(id, userId);
     }
 
-    // Add ID as last parameter
+    // Add ID as parameter
     values.push(id);
+    const idParam = paramCount++;
+
+    // Build WHERE clause with optional user check
+    let whereClause = `WHERE id = $${idParam}`;
+    if (userId) {
+      whereClause += ` AND user_id = $${paramCount++}`;
+      values.push(userId);
+    }
 
     const result = await db.query(
       `UPDATE items
        SET ${fields.join(', ')}, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $${paramCount}
+       ${whereClause}
        RETURNING *`,
       values
     );
@@ -243,26 +275,40 @@ class ItemRepository {
   /**
    * Delete an item
    * @param {string} id - Item ID
+   * @param {string} userId - User ID (for access control)
    * @returns {Promise<boolean>} - True if deleted, false if not found
    */
-  async delete(id) {
-    const result = await db.query(
-      'DELETE FROM items WHERE id = $1',
-      [id]
-    );
+  async delete(id, userId = null) {
+    let query = 'DELETE FROM items WHERE id = $1';
+    const params = [id];
+
+    if (userId) {
+      query += ' AND user_id = $2';
+      params.push(userId);
+    }
+
+    const result = await db.query(query, params);
     return result.rowCount > 0;
   }
 
   /**
    * Get items by tote ID
    * @param {string} toteId - Tote ID
+   * @param {string} userId - User ID (optional, for access control)
    * @returns {Promise<Array>} - Array of items
    */
-  async findByToteId(toteId) {
-    const result = await db.query(
-      'SELECT * FROM items WHERE tote_id = $1 ORDER BY name',
-      [toteId]
-    );
+  async findByToteId(toteId, userId = null) {
+    let query = 'SELECT * FROM items WHERE tote_id = $1';
+    const params = [toteId];
+
+    if (userId) {
+      query += ' AND user_id = $2';
+      params.push(userId);
+    }
+
+    query += ' ORDER BY name';
+
+    const result = await db.query(query, params);
     return result.rows.map(row => this.mapToCamelCase(row));
   }
 
@@ -282,6 +328,7 @@ class ItemRepository {
       condition: row.condition,
       tags: row.tags || [],
       photoUrl: row.photo_url,
+      userId: row.user_id,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
     };

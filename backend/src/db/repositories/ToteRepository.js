@@ -7,31 +7,46 @@ import { nanoid } from 'nanoid';
 class ToteRepository {
   /**
    * Get all totes
+   * @param {string} userId - User ID (optional, for filtering)
    * @returns {Promise<Array>} - Array of totes
    */
-  async findAll() {
-    const result = await db.query(
-      'SELECT * FROM totes ORDER BY created_at DESC'
-    );
-    return result.rows;
+  async findAll(userId = null) {
+    let query = 'SELECT * FROM totes';
+    const params = [];
+
+    if (userId) {
+      query += ' WHERE user_id = $1';
+      params.push(userId);
+    }
+
+    query += ' ORDER BY created_at DESC';
+
+    const result = await db.query(query, params);
+    return result.rows.map(row => this.mapToCamelCase(row));
   }
 
   /**
    * Get tote by ID
    * @param {string} id - Tote ID
+   * @param {string} userId - User ID (optional, for access control)
    * @returns {Promise<Object|null>} - Tote object or null
    */
-  async findById(id) {
-    const result = await db.query(
-      'SELECT * FROM totes WHERE id = $1',
-      [id]
-    );
-    return result.rows[0] || null;
+  async findById(id, userId = null) {
+    let query = 'SELECT * FROM totes WHERE id = $1';
+    const params = [id];
+
+    if (userId) {
+      query += ' AND user_id = $2';
+      params.push(userId);
+    }
+
+    const result = await db.query(query, params);
+    return result.rows[0] ? this.mapToCamelCase(result.rows[0]) : null;
   }
 
   /**
    * Create a new tote
-   * @param {Object} toteData - Tote data
+   * @param {Object} toteData - Tote data (must include userId)
    * @returns {Promise<Object>} - Created tote
    */
   async create(toteData) {
@@ -39,8 +54,8 @@ class ToteRepository {
     const now = new Date().toISOString();
 
     const result = await db.query(
-      `INSERT INTO totes (id, name, location, description, color, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `INSERT INTO totes (id, name, location, description, color, user_id, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        RETURNING *`,
       [
         id,
@@ -48,6 +63,7 @@ class ToteRepository {
         toteData.location || null,
         toteData.description || null,
         toteData.color || null,
+        toteData.userId || null,
         toteData.createdAt || now,
         toteData.updatedAt || now,
       ]
@@ -60,9 +76,10 @@ class ToteRepository {
    * Update a tote
    * @param {string} id - Tote ID
    * @param {Object} updates - Fields to update
+   * @param {string} userId - User ID (for access control)
    * @returns {Promise<Object|null>} - Updated tote or null
    */
-  async update(id, updates) {
+  async update(id, updates, userId = null) {
     const fields = [];
     const values = [];
     let paramCount = 1;
@@ -87,16 +104,24 @@ class ToteRepository {
 
     if (fields.length === 0) {
       // No updates provided
-      return await this.findById(id);
+      return await this.findById(id, userId);
     }
 
-    // Add ID as last parameter
+    // Add ID as parameter
     values.push(id);
+    const idParam = paramCount++;
+
+    // Build WHERE clause with optional user check
+    let whereClause = `WHERE id = $${idParam}`;
+    if (userId) {
+      whereClause += ` AND user_id = $${paramCount++}`;
+      values.push(userId);
+    }
 
     const result = await db.query(
       `UPDATE totes
        SET ${fields.join(', ')}, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $${paramCount}
+       ${whereClause}
        RETURNING *`,
       values
     );
@@ -107,44 +132,71 @@ class ToteRepository {
   /**
    * Delete a tote
    * @param {string} id - Tote ID
+   * @param {string} userId - User ID (for access control)
    * @returns {Promise<boolean>} - True if deleted, false if not found
    */
-  async delete(id) {
-    const result = await db.query(
-      'DELETE FROM totes WHERE id = $1',
-      [id]
-    );
+  async delete(id, userId = null) {
+    let query = 'DELETE FROM totes WHERE id = $1';
+    const params = [id];
+
+    if (userId) {
+      query += ' AND user_id = $2';
+      params.push(userId);
+    }
+
+    const result = await db.query(query, params);
     return result.rowCount > 0;
   }
 
   /**
    * Get items in a tote
    * @param {string} toteId - Tote ID
-   * @returns {Promise<Array>} - Array of items
+   * @param {string} userId - User ID (optional, for access control)
+   * @returns {Promise<Array|null>} - Array of items or null if tote not found
    */
-  async getItems(toteId) {
-    const result = await db.query(
-      'SELECT * FROM items WHERE tote_id = $1 ORDER BY name',
-      [toteId]
-    );
-    return result.rows.map(row => this.mapToCamelCase(row));
+  async getItemsInTote(toteId, userId = null) {
+    // First check if tote exists and belongs to user
+    const tote = await this.findById(toteId, userId);
+    if (!tote) {
+      return null;
+    }
+
+    // Get items in this tote
+    let query = 'SELECT * FROM items WHERE tote_id = $1';
+    const params = [toteId];
+
+    if (userId) {
+      query += ' AND user_id = $2';
+      params.push(userId);
+    }
+
+    query += ' ORDER BY name';
+
+    const result = await db.query(query, params);
+    return result.rows.map(row => this.mapItemToCamelCase(row));
   }
 
   /**
    * Count items in a tote
    * @param {string} toteId - Tote ID
+   * @param {string} userId - User ID (optional, for access control)
    * @returns {Promise<number>} - Count of items
    */
-  async countItems(toteId) {
-    const result = await db.query(
-      'SELECT COUNT(*) as count FROM items WHERE tote_id = $1',
-      [toteId]
-    );
+  async countItems(toteId, userId = null) {
+    let query = 'SELECT COUNT(*) as count FROM items WHERE tote_id = $1';
+    const params = [toteId];
+
+    if (userId) {
+      query += ' AND user_id = $2';
+      params.push(userId);
+    }
+
+    const result = await db.query(query, params);
     return parseInt(result.rows[0].count, 10);
   }
 
   /**
-   * Map database row to camelCase object
+   * Map database row to camelCase object (for totes)
    * @param {Object} row - Database row
    * @returns {Object} - Camel case object
    */
@@ -155,6 +207,29 @@ class ToteRepository {
       location: row.location,
       description: row.description,
       color: row.color,
+      userId: row.user_id,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+    };
+  }
+
+  /**
+   * Map database row to camelCase object (for items)
+   * @param {Object} row - Database row
+   * @returns {Object} - Camel case object
+   */
+  mapItemToCamelCase(row) {
+    return {
+      id: row.id,
+      name: row.name,
+      description: row.description,
+      category: row.category,
+      toteId: row.tote_id,
+      quantity: row.quantity,
+      condition: row.condition,
+      tags: row.tags || [],
+      photoUrl: row.photo_url,
+      userId: row.user_id,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
     };
