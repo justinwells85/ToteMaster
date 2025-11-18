@@ -26,7 +26,15 @@ class ToteRepository {
     logger.info('[ToteRepository] Executing query:', { query, params });
     const result = await db.query(query, params);
     logger.info('[ToteRepository] Query completed', { rowCount: result.rows.length });
-    return result.rows.map(row => this.mapToCamelCase(row));
+    logger.info('[ToteRepository] Starting to map rows...');
+    const mapped = result.rows.map((row, index) => {
+      logger.info(`[ToteRepository] Mapping row ${index}:`, row);
+      const camelCase = this.mapToCamelCase(row);
+      logger.info(`[ToteRepository] Mapped row ${index}:`, camelCase);
+      return camelCase;
+    });
+    logger.info('[ToteRepository] Finished mapping, returning results');
+    return mapped;
   }
 
   /**
