@@ -1,11 +1,17 @@
 import * as totesService from '../services/totesService.js';
 import { parsePagination, parseSort } from '../utils/queryHelpers.js';
+import logger from '../utils/logger.js';
 
 export const getAllTotes = async (req, res) => {
+  logger.info('[TotesController] getAllTotes called', { userId: req.user.userId });
   try {
+    logger.info('[TotesController] Calling totesService.getAllTotes...');
     const totes = await totesService.getAllTotes(req.user.userId);
+    logger.info('[TotesController] Got totes from service', { count: totes.length });
     res.json(totes);
+    logger.info('[TotesController] Response sent successfully');
   } catch (error) {
+    logger.error('[TotesController] Error in getAllTotes:', error);
     res.status(500).json({ error: error.message });
   }
 };

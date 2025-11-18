@@ -1,8 +1,18 @@
 import ToteRepository from '../db/repositories/ToteRepository.js';
 import { validateTote } from '../models/Tote.js';
+import logger from '../utils/logger.js';
 
 export const getAllTotes = async (userId) => {
-  return await ToteRepository.findAll(userId);
+  logger.info('[TotesService] getAllTotes called', { userId });
+  try {
+    logger.info('[TotesService] Calling ToteRepository.findAll...');
+    const result = await ToteRepository.findAll(userId);
+    logger.info('[TotesService] ToteRepository.findAll completed', { count: result.length });
+    return result;
+  } catch (error) {
+    logger.error('[TotesService] Error in getAllTotes:', error);
+    throw error;
+  }
 };
 
 export const getToteById = async (id, userId) => {

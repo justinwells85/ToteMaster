@@ -1,5 +1,6 @@
 import db from '../index.js';
 import { nanoid } from 'nanoid';
+import logger from '../utils/logger.js';
 
 /**
  * Tote Repository - Database operations for totes
@@ -11,6 +12,7 @@ class ToteRepository {
    * @returns {Promise<Array>} - Array of totes
    */
   async findAll(userId = null) {
+    logger.info('[ToteRepository] findAll called', { userId });
     let query = 'SELECT * FROM totes';
     const params = [];
 
@@ -21,7 +23,9 @@ class ToteRepository {
 
     query += ' ORDER BY created_at DESC';
 
+    logger.info('[ToteRepository] Executing query:', { query, params });
     const result = await db.query(query, params);
+    logger.info('[ToteRepository] Query completed', { rowCount: result.rows.length });
     return result.rows.map(row => this.mapToCamelCase(row));
   }
 
