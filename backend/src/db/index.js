@@ -14,7 +14,9 @@ const poolConfig = {
   password: process.env.DB_PASSWORD || 'totemaster',
   max: 20, // Maximum number of clients in the pool
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
+  connectionTimeoutMillis: 5000,  // Increased from 2000
+  query_timeout: 10000,  // 10 second query timeout
+  statement_timeout: 10000,  // 10 second statement timeout
 };
 
 // Create connection pool
@@ -35,6 +37,11 @@ pool.on('error', (err) => {
 export const query = async (text, params) => {
   const start = Date.now();
   console.log('[DB] query() called, about to execute...');
+  console.log('[DB] Pool status:', {
+    total: pool.totalCount,
+    idle: pool.idleCount,
+    waiting: pool.waitingCount
+  });
   try {
     console.log('[DB] Calling pool.query...');
     const res = await pool.query(text, params);
