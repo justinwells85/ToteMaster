@@ -11,8 +11,7 @@ import apiClient from './api';
  * @returns {Promise} - Totes data
  */
 export const getAllTotes = async (params = {}) => {
-  const response = await apiClient.get('/totes', { params });
-  return response.data;
+  return await apiClient.get('/totes', { params });
 };
 
 /**
@@ -21,8 +20,7 @@ export const getAllTotes = async (params = {}) => {
  * @returns {Promise} - Tote data
  */
 export const getToteById = async (id) => {
-  const response = await apiClient.get(`/totes/${id}`);
-  return response.data;
+  return await apiClient.get(`/totes/${id}`);
 };
 
 /**
@@ -31,8 +29,7 @@ export const getToteById = async (id) => {
  * @returns {Promise} - Created tote
  */
 export const createTote = async (toteData) => {
-  const response = await apiClient.post('/totes', toteData);
-  return response.data;
+  return await apiClient.post('/totes', toteData);
 };
 
 /**
@@ -42,8 +39,7 @@ export const createTote = async (toteData) => {
  * @returns {Promise} - Updated tote
  */
 export const updateTote = async (id, toteData) => {
-  const response = await apiClient.put(`/totes/${id}`, toteData);
-  return response.data;
+  return await apiClient.put(`/totes/${id}`, toteData);
 };
 
 /**
@@ -52,6 +48,5 @@ export const updateTote = async (id, toteData) => {
  * @returns {Promise}
  */
 export const deleteTote = async (id) => {
-  const response = await apiClient.delete(`/totes/${id}`);
-  return response.data;
+  return await apiClient.delete(`/totes/${id}`);
 };
