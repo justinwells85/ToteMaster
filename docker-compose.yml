@@ -41,6 +41,8 @@ services:
       - DB_NAME=totemaster
       - DB_USER=totemaster
       - DB_PASSWORD=totemaster
+      - JWT_SECRET=your-development-jwt-secret-change-in-production-use-long-random-string
+      - JWT_EXPIRES_IN=7d
     depends_on:
       postgres:
         condition: service_healthy
