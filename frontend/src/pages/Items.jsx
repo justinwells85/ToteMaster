@@ -19,16 +19,21 @@ function Items() {
   const loadData = async () => {
     try {
       setLoading(true);
+      console.log('Loading items and totes...');
       const [itemsData, totesData] = await Promise.all([
         getAllItems(),
         getAllTotes(),
       ]);
+      console.log('Items data:', itemsData);
+      console.log('Totes data:', totesData);
       setItems(itemsData);
       setTotes(totesData);
       setError(null);
     } catch (err) {
-      setError(err.message);
+      console.error('Error loading data:', err);
+      setError(err.message || 'Failed to load data');
     } finally {
+      console.log('Loading complete');
       setLoading(false);
     }
   };
