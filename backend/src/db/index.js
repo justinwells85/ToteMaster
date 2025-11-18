@@ -36,7 +36,9 @@ pool.on('error', (err) => {
  */
 export const query = async (text, params) => {
   const start = Date.now();
+  const callStack = new Error().stack;
   console.log('[DB] query() called, about to execute...');
+  console.log('[DB] Call stack:', callStack.split('\n').slice(1, 4).join('\n'));
   console.log('[DB] Pool status:', {
     total: pool.totalCount,
     idle: pool.idleCount,
