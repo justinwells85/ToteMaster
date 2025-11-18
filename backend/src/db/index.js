@@ -34,17 +34,23 @@ pool.on('error', (err) => {
  */
 export const query = async (text, params) => {
   const start = Date.now();
+  console.log('[DB] query() called, about to execute...');
   try {
+    console.log('[DB] Calling pool.query...');
     const res = await pool.query(text, params);
+    console.log('[DB] pool.query returned');
     const duration = Date.now() - start;
 
     if (process.env.NODE_ENV === 'development') {
       console.log('Executed query', { text, duration, rows: res.rowCount });
     }
 
-    return res;
+    console.log('[DB] About to return result');
+    const returnValue = res;
+    console.log('[DB] Returning:', { rowCount: returnValue.rowCount, hasRows: !!returnValue.rows });
+    return returnValue;
   } catch (error) {
-    console.error('Database query error:', error);
+    console.error('[DB] Database query error:', error);
     throw error;
   }
 };
