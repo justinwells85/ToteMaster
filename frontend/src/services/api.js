@@ -1,4 +1,7 @@
-const API_BASE_URL = '/api';
+// Use direct backend URL in Docker, proxy in local dev
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+
+console.log('[API] Using base URL:', API_BASE_URL);
 
 /**
  * API Client with automatic Authorization header injection and request deduplication
