@@ -9,11 +9,13 @@ Tote Master is a web-based inventory management system designed to help you keep
 
 ## Features
 
+- **User Authentication**: Secure JWT-based authentication with user registration and login
+- **Multi-User Support**: Each user has their own isolated inventory data
 - **Item Management**: Add, edit, and delete items with descriptions, categories, and tags
 - **Tote Organization**: Create and manage storage totes/containers
 - **Quick Search**: Find items instantly by name, category, or tags
 - **Location Tracking**: Know exactly which tote contains each item
-- **RESTful API**: Clean API architecture for easy integration
+- **RESTful API**: Clean API architecture with protected routes
 - **Modern UI**: React-based frontend with responsive design
 
 ## Technology Stack
@@ -31,7 +33,7 @@ Tote Master is a web-based inventory management system designed to help you keep
 - Mobile app (React Native)
 - Photo uploads for items
 - Barcode/QR code scanning
-- User authentication
+- Advanced user permissions and roles
 
 ## Project Structure
 
@@ -336,27 +338,123 @@ docker-compose down -v
 docker stats
 ```
 
+## Authentication
+
+Tote Master uses **JWT (JSON Web Token)** based authentication to secure API endpoints and ensure data isolation between users.
+
+### Environment Variables
+
+Configure authentication in your `backend/.env` file:
+
+```env
+JWT_SECRET=your-secret-key-change-this-in-production-use-a-long-random-string
+JWT_EXPIRES_IN=7d  # Token validity period (e.g., 7d, 24h, 60m)
+```
+
+**Security Note**: Always use a strong, randomly generated secret in production. Never commit your JWT secret to version control.
+
+### Authentication Flow
+
+1. **Register**: Create a new user account
+2. **Login**: Receive a JWT token
+3. **Use Token**: Include token in `Authorization` header for all API requests
+4. **Auto-Logout**: Token expires after configured period
+
+### Password Requirements
+
+- Minimum 8 characters
+- At least one uppercase letter
+- At least one lowercase letter
+- At least one number
+
+### API Endpoints
+
+#### Authentication Routes (Public)
+
+- `POST /api/auth/register` - Register a new user
+  ```json
+  {
+    "email": "user@example.com",
+    "password": "SecurePass123",
+    "name": "John Doe"
+  }
+  ```
+
+- `POST /api/auth/login` - Login and receive JWT token
+  ```json
+  {
+    "email": "user@example.com",
+    "password": "SecurePass123"
+  }
+  ```
+
+- `GET /api/auth/me` - Get current user profile (requires authentication)
+- `PUT /api/auth/me` - Update user profile (requires authentication)
+- `POST /api/auth/change-password` - Change password (requires authentication)
+- `DELETE /api/auth/me` - Delete user account (requires authentication)
+
+#### Using Authentication
+
+All item and tote endpoints require authentication. Include the JWT token in the Authorization header:
+
+```bash
+Authorization: Bearer <your-jwt-token>
+```
+
+**Example using curl:**
+```bash
+# Login to get token
+curl -X POST http://localhost:3000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"user@example.com","password":"SecurePass123"}'
+
+# Use token to access protected endpoints
+curl http://localhost:3000/api/items \
+  -H "Authorization: Bearer <your-jwt-token>"
+```
+
+### Data Isolation
+
+Each user has complete data isolation:
+- Users can only see and modify their own items and totes
+- All queries are automatically filtered by user ID
+- Attempting to access another user's data returns 404 Not Found
+- Deleting a user account cascades to delete all their items and totes
+
 ## API Endpoints
 
-### Items
+### Items (All require authentication)
 
-- `GET /api/items` - Get all items
-- `GET /api/items/:id` - Get item by ID
+- `GET /api/items` - Get all items (user-specific)
+- `GET /api/items/:id` - Get item by ID (user-specific)
 - `POST /api/items` - Create new item
-- `PUT /api/items/:id` - Update item
-- `DELETE /api/items/:id` - Delete item
-- `GET /api/items/tote/:toteId` - Get items in a specific tote
-- `GET /api/items/search/:query` - Search items
+- `PUT /api/items/:id` - Update item (user-specific)
+- `DELETE /api/items/:id` - Delete item (user-specific)
+- `GET /api/items/tote/:toteId` - Get items in a specific tote (user-specific)
+- `GET /api/items/search/:query` - Search items (user-specific)
 
-### Totes
+### Totes (All require authentication)
 
-- `GET /api/totes` - Get all totes
-- `GET /api/totes/:id` - Get tote by ID
+- `GET /api/totes` - Get all totes (user-specific)
+- `GET /api/totes/:id` - Get tote by ID (user-specific)
 - `POST /api/totes` - Create new tote
-- `PUT /api/totes/:id` - Update tote
-- `DELETE /api/totes/:id` - Delete tote
+- `PUT /api/totes/:id` - Update tote (user-specific)
+- `DELETE /api/totes/:id` - Delete tote (user-specific)
 
 ## Data Models
+
+### User
+```json
+{
+  "id": "unique-id",
+  "email": "user@example.com",
+  "name": "John Doe",
+  "createdAt": "ISO-8601 timestamp",
+  "updatedAt": "ISO-8601 timestamp"
+}
+```
+
+Note: Password hash is never returned in API responses.
 
 ### Item
 ```json
@@ -369,6 +467,7 @@ docker stats
   "quantity": 1,
   "condition": "good",
   "tags": ["tag1", "tag2"],
+  "userId": "user-id",
   "createdAt": "ISO-8601 timestamp",
   "updatedAt": "ISO-8601 timestamp"
 }
@@ -382,6 +481,7 @@ docker stats
   "location": "Storage location",
   "description": "Description",
   "color": "blue",
+  "userId": "user-id",
   "createdAt": "ISO-8601 timestamp",
   "updatedAt": "ISO-8601 timestamp"
 }
@@ -637,7 +737,8 @@ We follow [Conventional Commits](https://www.conventionalcommits.org/):
 - [x] Docker containerization
 
 ### Phase 2 (In Progress)
-- [ ] User authentication
+- [x] User authentication (JWT-based)
+- [x] Multi-user support with data isolation
 - [ ] Photo uploads for items
 - [ ] Advanced search and filtering
 - [ ] Data export (CSV/PDF)
@@ -645,7 +746,7 @@ We follow [Conventional Commits](https://www.conventionalcommits.org/):
 ### Phase 3
 - [ ] Mobile app (React Native)
 - [ ] Barcode/QR code scanning
-- [ ] Multi-user support
+- [ ] Advanced user permissions and roles
 - [ ] Cloud deployment
 - [ ] Microservices architecture
 

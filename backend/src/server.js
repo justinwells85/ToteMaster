@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import itemsRouter from './routes/items.js';
 import totesRouter from './routes/totes.js';
+import authRouter from './routes/auth.js';
 import { requestLogger } from './middleware/logger.js';
 import logger from './utils/logger.js';
 import db from './db/index.js';
@@ -27,12 +28,14 @@ app.get('/', (req, res) => {
     version: '1.0.0',
     database: 'PostgreSQL',
     endpoints: {
+      auth: '/api/auth',
       items: '/api/items',
       totes: '/api/totes',
     },
   });
 });
 
+app.use('/api/auth', authRouter);
 app.use('/api/items', itemsRouter);
 app.use('/api/totes', totesRouter);
 

@@ -5,8 +5,12 @@ import {
   validateIdParam,
   validateSearchQuery,
 } from '../middleware/validation.js';
+import { requireAuth } from '../middleware/auth.js';
 
 const router = express.Router();
+
+// All routes require authentication
+router.use(requireAuth);
 
 // GET all items
 router.get('/', itemsController.getAllItems);

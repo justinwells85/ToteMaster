@@ -4,8 +4,12 @@ import {
   validateToteRequest,
   validateIdParam,
 } from '../middleware/validation.js';
+import { requireAuth } from '../middleware/auth.js';
 
 const router = express.Router();
+
+// All routes require authentication
+router.use(requireAuth);
 
 // GET all totes
 router.get('/', totesController.getAllTotes);

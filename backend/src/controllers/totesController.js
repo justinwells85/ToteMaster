@@ -3,20 +3,7 @@ import { parsePagination, parseSort } from '../utils/queryHelpers.js';
 
 export const getAllTotes = async (req, res) => {
   try {
-    const allowedSortFields = ['name', 'location', 'size', 'createdAt', 'updatedAt'];
-
-    // Parse query parameters
-    const pagination = parsePagination(req.query);
-    const sort = parseSort(req.query, allowedSortFields, 'createdAt');
-
-    // Build options
-    const options = {
-      ...sort,
-      paginate: req.query.page !== undefined,
-      ...pagination,
-    };
-
-    const totes = await totesService.getAllTotes(options);
+    const totes = await totesService.getAllTotes(req.user.userId);
     res.json(totes);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -25,7 +12,7 @@ export const getAllTotes = async (req, res) => {
 
 export const getToteById = async (req, res) => {
   try {
-    const tote = await totesService.getToteById(req.params.id);
+    const tote = await totesService.getToteById(req.params.id, req.user.userId);
     if (!tote) {
       return res.status(404).json({ error: 'Tote not found' });
     }
@@ -37,8 +24,8 @@ export const getToteById = async (req, res) => {
 
 export const createTote = async (req, res) => {
   try {
-    // Use validatedData from middleware
-    const newTote = await totesService.createTote(req.validatedData);
+    // Use validatedData from middleware and userId from auth
+    const newTote = await totesService.createTote(req.validatedData, req.user.userId);
     res.status(201).json(newTote);
   } catch (error) {
     res.status(400).json({ error: error.message });
@@ -47,8 +34,8 @@ export const createTote = async (req, res) => {
 
 export const updateTote = async (req, res) => {
   try {
-    // Use validatedData from middleware
-    const updatedTote = await totesService.updateTote(req.params.id, req.validatedData);
+    // Use validatedData from middleware and userId from auth
+    const updatedTote = await totesService.updateTote(req.params.id, req.validatedData, req.user.userId);
     if (!updatedTote) {
       return res.status(404).json({ error: 'Tote not found' });
     }
@@ -60,7 +47,7 @@ export const updateTote = async (req, res) => {
 
 export const deleteTote = async (req, res) => {
   try {
-    const deleted = await totesService.deleteTote(req.params.id);
+    const deleted = await totesService.deleteTote(req.params.id, req.user.userId);
     if (!deleted) {
       return res.status(404).json({ error: 'Tote not found' });
     }
