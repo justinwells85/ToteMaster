@@ -16,7 +16,7 @@ export const getAllItems = async (req, res) => {
       ...pagination,
     };
 
-    const items = await itemsService.getAllItems(options);
+    const items = await itemsService.getAllItems(req.user.userId, options);
     res.json(items);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -25,7 +25,7 @@ export const getAllItems = async (req, res) => {
 
 export const getItemById = async (req, res) => {
   try {
-    const item = await itemsService.getItemById(req.params.id);
+    const item = await itemsService.getItemById(req.params.id, req.user.userId);
     if (!item) {
       return res.status(404).json({ error: 'Item not found' });
     }
@@ -37,8 +37,8 @@ export const getItemById = async (req, res) => {
 
 export const createItem = async (req, res) => {
   try {
-    // Use validatedData from middleware
-    const newItem = await itemsService.createItem(req.validatedData);
+    // Use validatedData from middleware and userId from auth
+    const newItem = await itemsService.createItem(req.validatedData, req.user.userId);
     res.status(201).json(newItem);
   } catch (error) {
     res.status(400).json({ error: error.message });
@@ -47,8 +47,8 @@ export const createItem = async (req, res) => {
 
 export const updateItem = async (req, res) => {
   try {
-    // Use validatedData from middleware
-    const updatedItem = await itemsService.updateItem(req.params.id, req.validatedData);
+    // Use validatedData from middleware and userId from auth
+    const updatedItem = await itemsService.updateItem(req.params.id, req.validatedData, req.user.userId);
     if (!updatedItem) {
       return res.status(404).json({ error: 'Item not found' });
     }
@@ -60,7 +60,7 @@ export const updateItem = async (req, res) => {
 
 export const deleteItem = async (req, res) => {
   try {
-    const deleted = await itemsService.deleteItem(req.params.id);
+    const deleted = await itemsService.deleteItem(req.params.id, req.user.userId);
     if (!deleted) {
       return res.status(404).json({ error: 'Item not found' });
     }
@@ -72,7 +72,7 @@ export const deleteItem = async (req, res) => {
 
 export const getItemsByTote = async (req, res) => {
   try {
-    const items = await itemsService.getItemsByTote(req.params.toteId);
+    const items = await itemsService.getItemsByToteId(req.params.toteId, req.user.userId);
     res.json(items);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -94,7 +94,7 @@ export const searchItems = async (req, res) => {
       ...pagination,
     };
 
-    const items = await itemsService.searchItems(req.params.query, options);
+    const items = await itemsService.searchItems(req.params.query, req.user.userId, options);
     res.json(items);
   } catch (error) {
     res.status(500).json({ error: error.message });
