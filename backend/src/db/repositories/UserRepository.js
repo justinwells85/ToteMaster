@@ -12,7 +12,7 @@ class UserRepository {
    * @returns {Promise<Object>} Created user object (without password_hash)
    */
   async create(userData) {
-    const client = await db.pool.connect();
+    const client = await db.getClient();
     try {
       const id = `user-${nanoid()}`;
       const now = new Date().toISOString();
@@ -50,7 +50,7 @@ class UserRepository {
    * @returns {Promise<Object|null>} User object or null if not found
    */
   async findById(id) {
-    const client = await db.pool.connect();
+    const client = await db.getClient();
     try {
       const result = await client.query(
         `SELECT id, email, password_hash, name, created_at, updated_at
@@ -83,7 +83,7 @@ class UserRepository {
    * @returns {Promise<Object|null>} User object or null if not found
    */
   async findByEmail(email) {
-    const client = await db.pool.connect();
+    const client = await db.getClient();
     try {
       const result = await client.query(
         `SELECT id, email, password_hash, name, created_at, updated_at
@@ -117,7 +117,7 @@ class UserRepository {
    * @returns {Promise<Object|null>} Updated user object or null if not found
    */
   async update(id, updates) {
-    const client = await db.pool.connect();
+    const client = await db.getClient();
     try {
       const fields = [];
       const values = [];
@@ -182,7 +182,7 @@ class UserRepository {
    * @returns {Promise<boolean>} True if deleted, false if not found
    */
   async delete(id) {
-    const client = await db.pool.connect();
+    const client = await db.getClient();
     try {
       const result = await client.query(
         'DELETE FROM users WHERE id = $1',
@@ -201,7 +201,7 @@ class UserRepository {
    * @returns {Promise<boolean>} True if email exists
    */
   async emailExists(email) {
-    const client = await db.pool.connect();
+    const client = await db.getClient();
     try {
       const result = await client.query(
         'SELECT 1 FROM users WHERE email = $1',
@@ -220,7 +220,7 @@ class UserRepository {
    * @returns {Promise<Object>} Paginated users list
    */
   async findAll(options = {}) {
-    const client = await db.pool.connect();
+    const client = await db.getClient();
     try {
       const page = options.page || 1;
       const limit = options.limit || 10;
