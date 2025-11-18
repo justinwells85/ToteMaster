@@ -29,7 +29,9 @@ router.post('/register', async (req, res) => {
       token: result.token,
     });
   } catch (error) {
-    logger.error('Registration error:', error);
+    logger.error('Registration error:', error.message);
+    logger.error('Stack trace:', error.stack);
+    console.error('FULL ERROR:', error);
 
     if (error.message === 'Validation failed') {
       return res.status(400).json({
@@ -47,6 +49,8 @@ router.post('/register', async (req, res) => {
 
     res.status(500).json({
       error: 'Registration failed',
+      message: error.message,
+      details: error.stack,
     });
   }
 });
@@ -68,7 +72,9 @@ router.post('/login', async (req, res) => {
       token: result.token,
     });
   } catch (error) {
-    logger.error('Login error:', error);
+    logger.error('Login error:', error.message);
+    logger.error('Stack trace:', error.stack);
+    console.error('FULL ERROR:', error);
 
     if (error.message === 'Validation failed') {
       return res.status(400).json({
@@ -86,6 +92,8 @@ router.post('/login', async (req, res) => {
 
     res.status(500).json({
       error: 'Login failed',
+      message: error.message,
+      details: error.stack,
     });
   }
 });
