@@ -42,9 +42,17 @@ export const query = async (text, params) => {
     idle: pool.idleCount,
     waiting: pool.waitingCount
   });
+
   try {
     console.log('[DB] Calling pool.query...');
-    const res = await pool.query(text, params);
+
+    // Add a timeout wrapper to detect hanging queries
+    const queryPromise = pool.query(text, params);
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Query timeout after 10 seconds')), 10000);
+    });
+
+    const res = await Promise.race([queryPromise, timeoutPromise]);
     console.log('[DB] pool.query returned');
     const duration = Date.now() - start;
 
@@ -57,7 +65,14 @@ export const query = async (text, params) => {
     console.log('[DB] Returning:', { rowCount: returnValue.rowCount, hasRows: !!returnValue.rows });
     return returnValue;
   } catch (error) {
-    console.error('[DB] Database query error:', error);
+    const duration = Date.now() - start;
+    console.error('[DB] Database query error after', duration, 'ms:', error.message);
+    console.error('[DB] Query that failed:', text);
+    console.error('[DB] Pool status at error:', {
+      total: pool.totalCount,
+      idle: pool.idleCount,
+      waiting: pool.waitingCount
+    });
     throw error;
   }
 };
