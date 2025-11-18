@@ -13,28 +13,30 @@ class ToteRepository {
    */
   async findAll(userId = null) {
     logger.info('[ToteRepository] findAll called', { userId });
-    let query = 'SELECT * FROM totes';
-    const params = [];
 
-    if (userId) {
-      query += ' WHERE user_id = $1';
-      params.push(userId);
+    // Use getClient() instead of db.query() to work around hanging issue
+    const client = await db.getClient();
+    try {
+      let query = 'SELECT * FROM totes';
+      const params = [];
+
+      if (userId) {
+        query += ' WHERE user_id = $1';
+        params.push(userId);
+      }
+
+      query += ' ORDER BY created_at DESC';
+
+      logger.info('[ToteRepository] Executing query:', { query, params });
+      const result = await client.query(query, params);
+      logger.info('[ToteRepository] Query completed', { rowCount: result.rows.length });
+
+      const mapped = result.rows.map(row => this.mapToCamelCase(row));
+      logger.info('[ToteRepository] Finished mapping, returning results');
+      return mapped;
+    } finally {
+      client.release();
     }
-
-    query += ' ORDER BY created_at DESC';
-
-    logger.info('[ToteRepository] Executing query:', { query, params });
-    const result = await db.query(query, params);
-    logger.info('[ToteRepository] Query completed', { rowCount: result.rows.length });
-    logger.info('[ToteRepository] Starting to map rows...');
-    const mapped = result.rows.map((row, index) => {
-      logger.info(`[ToteRepository] Mapping row ${index}:`, row);
-      const camelCase = this.mapToCamelCase(row);
-      logger.info(`[ToteRepository] Mapped row ${index}:`, camelCase);
-      return camelCase;
-    });
-    logger.info('[ToteRepository] Finished mapping, returning results');
-    return mapped;
   }
 
   /**
