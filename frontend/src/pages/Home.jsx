@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
-import { locationsApi, containersApi, itemsApi } from '../services/api';
+import { getAllTotes } from '../services/totesService';
+import { getAllItems } from '../services/itemsService';
 import { Link } from 'react-router-dom';
 import '../styles/pages.css';
 
 function Home() {
   const [stats, setStats] = useState({
-    locations: 0,
-    containers: 0,
+    totes: 0,
     items: 0,
   });
   const [loading, setLoading] = useState(true);
@@ -18,14 +18,12 @@ function Home() {
   const loadStats = async () => {
     try {
       setLoading(true);
-      const [locations, containers, items] = await Promise.all([
-        locationsApi.getAll(),
-        containersApi.getAll(),
-        itemsApi.getAll(),
+      const [totes, items] = await Promise.all([
+        getAllTotes(),
+        getAllItems(),
       ]);
       setStats({
-        locations: locations.length,
-        containers: containers.length,
+        totes: totes.length,
         items: items.length,
       });
     } catch (err) {
@@ -45,13 +43,9 @@ function Home() {
       </div>
 
       <div className="stats-grid">
-        <Link to="/locations" className="stat-card">
-          <div className="stat-number">{stats.locations}</div>
-          <div className="stat-label">Locations</div>
-        </Link>
-        <Link to="/containers" className="stat-card">
-          <div className="stat-number">{stats.containers}</div>
-          <div className="stat-label">Containers</div>
+        <Link to="/totes" className="stat-card">
+          <div className="stat-number">{stats.totes}</div>
+          <div className="stat-label">Totes</div>
         </Link>
         <Link to="/items" className="stat-card">
           <div className="stat-number">{stats.items}</div>
@@ -65,24 +59,16 @@ function Home() {
           <div className="step">
             <div className="step-number">1</div>
             <div className="step-content">
-              <h3>Create Locations</h3>
-              <p>Define areas in your home where you store items (e.g., Garage, Basement, Attic)</p>
-              <Link to="/locations" className="btn btn-primary">Go to Locations</Link>
+              <h3>Create Totes</h3>
+              <p>Add storage totes with names, locations, and descriptions</p>
+              <Link to="/totes" className="btn btn-primary">Go to Totes</Link>
             </div>
           </div>
           <div className="step">
             <div className="step-number">2</div>
             <div className="step-content">
-              <h3>Add Containers</h3>
-              <p>Add containers or totes to your locations to organize your storage</p>
-              <Link to="/containers" className="btn btn-primary">Go to Containers</Link>
-            </div>
-          </div>
-          <div className="step">
-            <div className="step-number">3</div>
-            <div className="step-content">
               <h3>Track Items</h3>
-              <p>Add items to containers to keep track of what you have and where</p>
+              <p>Add items to your totes to keep track of what you have and where</p>
               <Link to="/items" className="btn btn-primary">Go to Items</Link>
             </div>
           </div>
