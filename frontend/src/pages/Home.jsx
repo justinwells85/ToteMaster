@@ -17,19 +17,30 @@ function Home() {
 
   const loadStats = async () => {
     try {
+      console.log('[Home] loadStats started');
       setLoading(true);
-      const [totes, items] = await Promise.all([
-        getAllTotes(),
-        getAllItems(),
-      ]);
+
+      console.log('[Home] Calling getAllTotes()...');
+      const totesPromise = getAllTotes();
+      console.log('[Home] Calling getAllItems()...');
+      const itemsPromise = getAllItems();
+
+      console.log('[Home] Waiting for Promise.all...');
+      const [totes, items] = await Promise.all([totesPromise, itemsPromise]);
+
+      console.log('[Home] Got totes:', totes);
+      console.log('[Home] Got items:', items);
+
       setStats({
         totes: totes.length,
         items: items.length,
       });
+      console.log('[Home] Stats updated successfully');
     } catch (err) {
-      console.error('Failed to load stats:', err);
+      console.error('[Home] Failed to load stats:', err);
     } finally {
       setLoading(false);
+      console.log('[Home] loadStats completed, loading:', false);
     }
   };
 

@@ -11,7 +11,16 @@ import apiClient from './api';
  * @returns {Promise} - Totes data
  */
 export const getAllTotes = async (params = {}) => {
-  return await apiClient.get('/totes', { params });
+  console.log('[TotesService] getAllTotes called with params:', params);
+  try {
+    console.log('[TotesService] Making API request to /totes');
+    const result = await apiClient.get('/totes', { params });
+    console.log('[TotesService] getAllTotes result:', result);
+    return result;
+  } catch (error) {
+    console.error('[TotesService] getAllTotes error:', error);
+    throw error;
+  }
 };
 
 /**

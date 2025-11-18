@@ -38,6 +38,8 @@ class ApiClient {
       headers: this.getHeaders(options.headers),
     };
 
+    console.log(`[API] request() called - endpoint: ${endpoint}, method: ${options.method || 'GET'}, url: ${url}`);
+
     // Create a cache key for deduplication (only for GET requests)
     const cacheKey = options.method === 'GET' ? `${options.method}:${url}` : null;
 
@@ -50,19 +52,28 @@ class ApiClient {
     // Make the actual request
     const requestPromise = (async () => {
       try {
+        console.log(`[API] Starting fetch for: ${url}`);
         const response = await fetch(url, config);
+        console.log(`[API] Fetch completed for: ${url}, status: ${response.status}`);
 
         if (!response.ok) {
           const error = await response.json().catch(() => ({ error: 'Request failed' }));
+          console.error(`[API] Request failed for ${url}:`, error);
           throw new Error(error.error || `HTTP ${response.status}: ${response.statusText}`);
         }
 
         // Handle 204 No Content
         if (response.status === 204) {
+          console.log(`[API] Got 204 No Content for: ${url}`);
           return null;
         }
 
-        return response.json();
+        const data = await response.json();
+        console.log(`[API] Response data for ${url}:`, data);
+        return data;
+      } catch (error) {
+        console.error(`[API] Exception in request to ${url}:`, error);
+        throw error;
       } finally {
         // Remove from pending requests when done
         if (cacheKey) {
