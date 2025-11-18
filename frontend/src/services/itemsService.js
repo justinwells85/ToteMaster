@@ -11,8 +11,7 @@ import apiClient from './api';
  * @returns {Promise} - Items data
  */
 export const getAllItems = async (params = {}) => {
-  const response = await apiClient.get('/items', { params });
-  return response.data;
+  return await apiClient.get('/items', { params });
 };
 
 /**
@@ -21,8 +20,7 @@ export const getAllItems = async (params = {}) => {
  * @returns {Promise} - Item data
  */
 export const getItemById = async (id) => {
-  const response = await apiClient.get(`/items/${id}`);
-  return response.data;
+  return await apiClient.get(`/items/${id}`);
 };
 
 /**
@@ -31,8 +29,7 @@ export const getItemById = async (id) => {
  * @returns {Promise} - Created item
  */
 export const createItem = async (itemData) => {
-  const response = await apiClient.post('/items', itemData);
-  return response.data;
+  return await apiClient.post('/items', itemData);
 };
 
 /**
@@ -42,8 +39,7 @@ export const createItem = async (itemData) => {
  * @returns {Promise} - Updated item
  */
 export const updateItem = async (id, itemData) => {
-  const response = await apiClient.put(`/items/${id}`, itemData);
-  return response.data;
+  return await apiClient.put(`/items/${id}`, itemData);
 };
 
 /**
@@ -52,8 +48,7 @@ export const updateItem = async (id, itemData) => {
  * @returns {Promise}
  */
 export const deleteItem = async (id) => {
-  const response = await apiClient.delete(`/items/${id}`);
-  return response.data;
+  return await apiClient.delete(`/items/${id}`);
 };
 
 /**
@@ -62,8 +57,7 @@ export const deleteItem = async (id) => {
  * @returns {Promise} - Items in the tote
  */
 export const getItemsByTote = async (toteId) => {
-  const response = await apiClient.get(`/items/tote/${toteId}`);
-  return response.data;
+  return await apiClient.get(`/items/tote/${toteId}`);
 };
 
 /**
@@ -73,6 +67,5 @@ export const getItemsByTote = async (toteId) => {
  * @returns {Promise} - Search results
  */
 export const searchItems = async (query, params = {}) => {
-  const response = await apiClient.get(`/items/search/${query}`, { params });
-  return response.data;
+  return await apiClient.get(`/items/search/${query}`, { params });
 };
