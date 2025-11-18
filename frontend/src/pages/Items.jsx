@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getAllItems } from '../services/itemsService';
+import { getAllItems, createItem, updateItem, deleteItem } from '../services/itemsService';
 import { getAllTotes } from '../services/totesService';
 import '../styles/pages.css';
 
@@ -47,10 +47,8 @@ function Items() {
         quantity: parseInt(formData.quantity),
       };
       if (editingId) {
-        const { updateItem } = await import('../services/itemsService');
         await updateItem(editingId, data);
       } else {
-        const { createItem } = await import('../services/itemsService');
         await createItem(data);
       }
       setFormData({ name: '', description: '', quantity: 1, toteId: '' });
@@ -76,7 +74,6 @@ function Items() {
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this item?')) return;
     try {
-      const { deleteItem } = await import('../services/itemsService');
       await deleteItem(id);
       loadData();
     } catch (err) {
