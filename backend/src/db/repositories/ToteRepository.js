@@ -1,6 +1,6 @@
 import db from '../index.js';
 import { nanoid } from 'nanoid';
-import logger from '../utils/logger.js';
+import logger from '../../utils/logger.js';
 
 /**
  * Tote Repository - Database operations for totes
