@@ -4,6 +4,8 @@ import dotenv from 'dotenv';
 import itemsRouter from './routes/items.js';
 import totesRouter from './routes/totes.js';
 import authRouter from './routes/auth.js';
+import locationsRouter from './routes/locations.js';
+import tagsRouter from './routes/tags.js';
 import { requestLogger } from './middleware/logger.js';
 import logger from './utils/logger.js';
 import db from './db/index.js';
@@ -31,6 +33,8 @@ app.get('/', (req, res) => {
       auth: '/api/auth',
       items: '/api/items',
       totes: '/api/totes',
+      locations: '/api/locations',
+      tags: '/api/tags',
     },
   });
 });
@@ -38,6 +42,8 @@ app.get('/', (req, res) => {
 app.use('/api/auth', authRouter);
 app.use('/api/items', itemsRouter);
 app.use('/api/totes', totesRouter);
+app.use('/api/locations', locationsRouter);
+app.use('/api/tags', tagsRouter);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
