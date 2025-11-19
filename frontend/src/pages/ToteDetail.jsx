@@ -3,19 +3,24 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getAllTotes, updateTote, deleteTote } from '@/services/totesService';
 import { getAllItems } from '@/services/itemsService';
+import { getAllLocations } from '@/services/locationsService';
+import { getAllTags, getTagsByToteId, addTagToTote, removeTagFromTote } from '@/services/tagsService';
 import { generateToteLabel } from '@/lib/labelGenerator';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { ArrowLeft, Edit, Trash2, Package, MapPin, QrCode } from 'lucide-react';
+import { ArrowLeft, Edit, Trash2, Package, MapPin, QrCode, Tag as TagIcon, Hash, Image as ImageIcon, X } from 'lucide-react';
 
 export default function ToteDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [isEditOpen, setIsEditOpen] = useState(false);
-  const [editForm, setEditForm] = useState({ name: '', location: '', description: '' });
+  const [isTagsOpen, setIsTagsOpen] = useState(false);
+  const [editForm, setEditForm] = useState({ name: '', locationId: '', description: '', color: '' });
+  const [selectedTags, setSelectedTags] = useState([]);
 
   const { data: totes = [] } = useQuery({
     queryKey: ['totes'],
@@ -27,8 +32,25 @@ export default function ToteDetail() {
     queryFn: getAllItems,
   });
 
+  const { data: locations = [] } = useQuery({
+    queryKey: ['locations'],
+    queryFn: getAllLocations,
+  });
+
+  const { data: allTags = [] } = useQuery({
+    queryKey: ['tags'],
+    queryFn: getAllTags,
+  });
+
+  const { data: toteTags = [] } = useQuery({
+    queryKey: ['toteTags', id],
+    queryFn: () => getTagsByToteId(id),
+    enabled: !!id,
+  });
+
   const tote = totes.find((t) => t.id === id);
   const itemsInTote = allItems.filter((item) => item.toteId === id);
+  const location = locations.find((l) => l.id === tote?.locationId);
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => updateTote(id, data),
@@ -50,10 +72,44 @@ export default function ToteDetail() {
     if (tote) {
       setEditForm({
         name: tote.name || '',
-        location: tote.location || '',
+        locationId: tote.locationId || '',
         description: tote.description || '',
+        color: tote.color || '',
       });
       setIsEditOpen(true);
+    }
+  };
+
+  const handleManageTags = () => {
+    setSelectedTags(toteTags.map(t => t.id));
+    setIsTagsOpen(true);
+  };
+
+  const handleTagToggle = (tagId) => {
+    setSelectedTags(prev =>
+      prev.includes(tagId)
+        ? prev.filter(id => id !== tagId)
+        : [...prev, tagId]
+    );
+  };
+
+  const handleSaveTags = async () => {
+    try {
+      const currentTagIds = toteTags.map(t => t.id);
+      const toAdd = selectedTags.filter(id => !currentTagIds.includes(id));
+      const toRemove = currentTagIds.filter(id => !selectedTags.includes(id));
+
+      for (const tagId of toAdd) {
+        await addTagToTote(id, tagId);
+      }
+      for (const tagId of toRemove) {
+        await removeTagFromTote(id, tagId);
+      }
+
+      queryClient.invalidateQueries({ queryKey: ['toteTags', id] });
+      setIsTagsOpen(false);
+    } catch (err) {
+      alert(err.message || 'Failed to update tags');
     }
   };
 
@@ -113,24 +169,49 @@ export default function ToteDetail() {
         </Button>
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-4xl font-bold text-primary mb-2">{tote.name}</h1>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="flex items-center gap-2">
+                <Hash className="h-6 w-6 text-muted-foreground" />
+                <span className="text-2xl font-bold text-muted-foreground">
+                  {tote.toteNumber}
+                </span>
+              </div>
+              {tote.color && (
+                <div
+                  className="w-8 h-8 rounded-full border-2 border-gray-300"
+                  style={{ backgroundColor: tote.color }}
+                  title={`Color: ${tote.color}`}
+                />
+              )}
+            </div>
+            <h1 className="text-4xl font-bold text-primary mb-2">{tote.name || `Tote #${tote.toteNumber}`}</h1>
             <div className="flex items-center gap-4 text-muted-foreground">
-              {tote.location && (
+              {location && (
                 <div className="flex items-center gap-1">
                   <MapPin className="h-4 w-4" />
-                  <span>{tote.location}</span>
+                  <span>{location.name}</span>
                 </div>
               )}
               <div className="flex items-center gap-1">
                 <Package className="h-4 w-4" />
                 <span>{itemsInTote.length} items</span>
               </div>
+              {toteTags.length > 0 && (
+                <div className="flex items-center gap-1">
+                  <TagIcon className="h-4 w-4" />
+                  <span>{toteTags.length} tags</span>
+                </div>
+              )}
             </div>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={handleGenerateLabel}>
               <QrCode className="mr-2 h-4 w-4" />
-              Generate Label
+              Label
+            </Button>
+            <Button variant="outline" onClick={handleManageTags}>
+              <TagIcon className="mr-2 h-4 w-4" />
+              Tags
             </Button>
             <Button variant="outline" onClick={handleEdit}>
               <Edit className="mr-2 h-4 w-4" />
@@ -146,6 +227,7 @@ export default function ToteDetail() {
 
       {/* Tote Info */}
       <div className="grid gap-6 mb-8">
+        {/* Description */}
         <Card>
           <CardHeader>
             <CardTitle>Description</CardTitle>
@@ -156,6 +238,96 @@ export default function ToteDetail() {
             </p>
           </CardContent>
         </Card>
+
+        {/* Location Details */}
+        {location && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Location Details</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <div className="flex justify-between py-2 border-b">
+                  <span className="text-muted-foreground">Location Name</span>
+                  <span className="font-medium">{location.name}</span>
+                </div>
+                {location.room && (
+                  <div className="flex justify-between py-2 border-b">
+                    <span className="text-muted-foreground">Room</span>
+                    <span className="font-medium">{location.room}</span>
+                  </div>
+                )}
+                {location.position && (
+                  <div className="flex justify-between py-2 border-b">
+                    <span className="text-muted-foreground">Position</span>
+                    <span className="font-medium">{location.position}</span>
+                  </div>
+                )}
+                {location.specificReference && (
+                  <div className="flex justify-between py-2">
+                    <span className="text-muted-foreground">Reference</span>
+                    <span className="font-medium">{location.specificReference}</span>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Tags */}
+        {toteTags.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Tags</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-2">
+                {toteTags.map((tag) => (
+                  <div
+                    key={tag.id}
+                    className="px-3 py-1 rounded-full text-sm font-medium"
+                    style={{
+                      backgroundColor: tag.color ? `${tag.color}20` : '#e5e7eb',
+                      color: tag.color || '#374151',
+                      border: `1px solid ${tag.color || '#d1d5db'}`,
+                    }}
+                  >
+                    {tag.name}
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Photos */}
+        {tote.photos && tote.photos.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Photos</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {tote.photos.map((photo, index) => (
+                  <div
+                    key={index}
+                    className="aspect-square rounded-lg overflow-hidden border bg-muted flex items-center justify-center"
+                  >
+                    <img
+                      src={photo}
+                      alt={`Tote photo ${index + 1}`}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.parentElement.innerHTML = `<div class="flex items-center justify-center w-full h-full text-muted-foreground"><ImageIcon class="h-12 w-12" /></div>`;
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Items in Tote */}
@@ -206,19 +378,34 @@ export default function ToteDetail() {
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium">Name</label>
+                <label className="text-sm font-medium">Name (Optional)</label>
                 <Input
                   value={editForm.name}
                   onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                  required
+                  placeholder={`Tote #${tote?.toteNumber}`}
                 />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Location</label>
+                <Select
+                  value={editForm.locationId}
+                  onChange={(e) => setEditForm({ ...editForm, locationId: e.target.value })}
+                >
+                  <option value="">No location</option>
+                  {locations.map((loc) => (
+                    <option key={loc.id} value={loc.id}>
+                      {loc.name}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Color</label>
                 <Input
-                  value={editForm.location}
-                  onChange={(e) => setEditForm({ ...editForm, location: e.target.value })}
-                  placeholder="e.g., Garage, Basement, Attic"
+                  type="color"
+                  value={editForm.color}
+                  onChange={(e) => setEditForm({ ...editForm, color: e.target.value })}
+                  className="h-10 w-full"
                 />
               </div>
               <div className="space-y-2">
@@ -240,6 +427,56 @@ export default function ToteDetail() {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Tags Management Dialog */}
+      <Dialog open={isTagsOpen} onOpenChange={setIsTagsOpen}>
+        <DialogContent onClose={() => setIsTagsOpen(false)}>
+          <DialogHeader>
+            <DialogTitle>Manage Tags</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <div className="space-y-2">
+              {allTags.length === 0 ? (
+                <p className="text-muted-foreground text-center py-4">
+                  No tags available. Create tags from the Dashboard.
+                </p>
+              ) : (
+                allTags.map((tag) => (
+                  <div
+                    key={tag.id}
+                    className="flex items-center justify-between p-3 border rounded-md hover:bg-accent cursor-pointer"
+                    onClick={() => handleTagToggle(tag.id)}
+                  >
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={selectedTags.includes(tag.id)}
+                        onChange={() => handleTagToggle(tag.id)}
+                        className="w-4 h-4"
+                      />
+                      <span>{tag.name}</span>
+                    </div>
+                    {tag.color && (
+                      <div
+                        className="w-6 h-6 rounded-full border"
+                        style={{ backgroundColor: tag.color }}
+                      />
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setIsTagsOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveTags}>
+              Save Tags
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
