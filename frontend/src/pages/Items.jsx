@@ -75,7 +75,9 @@ function Items() {
     if (!window.confirm('Are you sure you want to delete this item?')) return;
     try {
       await deleteItem(id);
-      loadData();
+      // Update state directly instead of refetching to avoid cache issues
+      setItems(items.filter(item => item.id !== id));
+      setError(null);
     } catch (err) {
       setError(err.message);
     }

@@ -113,7 +113,9 @@ function Totes() {
 
     try {
       await deleteTote(toteId);
-      loadTotes();
+      // Update state directly instead of refetching to avoid cache issues
+      setTotes(totes.filter(tote => tote.id !== toteId));
+      setError(null);
     } catch (err) {
       alert(err.response?.data?.error || 'Failed to delete tote');
     }
