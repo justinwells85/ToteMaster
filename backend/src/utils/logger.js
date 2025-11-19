@@ -92,15 +92,16 @@ class Logger {
    * Log HTTP request
    */
   http(req, res, duration) {
+    const fullPath = req.originalUrl || req.url;
     const meta = {
       method: req.method,
-      path: req.path,
+      path: fullPath,
       status: res.statusCode,
       duration: `${duration}ms`,
     };
 
     const level = res.statusCode >= 400 ? 'WARN' : 'INFO';
-    this[level.toLowerCase()](`HTTP ${req.method} ${req.path}`, meta);
+    this[level.toLowerCase()](`HTTP ${req.method} ${fullPath}`, meta);
   }
 }
 

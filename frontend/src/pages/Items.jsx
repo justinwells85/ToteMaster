@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
-import { itemsApi, containersApi } from '../services/api';
+import { getAllItems, createItem, updateItem, deleteItem } from '../services/itemsService';
+import { getAllTotes } from '../services/totesService';
 import '../styles/pages.css';
 
 function Items() {
   const [items, setItems] = useState([]);
-  const [containers, setContainers] = useState([]);
+  const [totes, setTotes] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
-  const [formData, setFormData] = useState({ name: '', description: '', quantity: 1, containerId: '' });
+  const [formData, setFormData] = useState({ name: '', description: '', quantity: 1, toteId: '' });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -18,16 +19,21 @@ function Items() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [itemsData, containersData] = await Promise.all([
-        itemsApi.getAll(),
-        containersApi.getAll(),
+      console.log('Loading items and totes...');
+      const [itemsData, totesData] = await Promise.all([
+        getAllItems(),
+        getAllTotes(),
       ]);
+      console.log('Items data:', itemsData);
+      console.log('Totes data:', totesData);
       setItems(itemsData);
-      setContainers(containersData);
+      setTotes(totesData);
       setError(null);
     } catch (err) {
-      setError(err.message);
+      console.error('Error loading data:', err);
+      setError(err.message || 'Failed to load data');
     } finally {
+      console.log('Loading complete');
       setLoading(false);
     }
   };
@@ -37,15 +43,15 @@ function Items() {
     try {
       const data = {
         ...formData,
-        containerId: parseInt(formData.containerId),
+        toteId: parseInt(formData.toteId),
         quantity: parseInt(formData.quantity),
       };
       if (editingId) {
-        await itemsApi.update(editingId, data);
+        await updateItem(editingId, data);
       } else {
-        await itemsApi.create(data);
+        await createItem(data);
       }
-      setFormData({ name: '', description: '', quantity: 1, containerId: '' });
+      setFormData({ name: '', description: '', quantity: 1, toteId: '' });
       setShowForm(false);
       setEditingId(null);
       loadData();
@@ -59,7 +65,7 @@ function Items() {
       name: item.name,
       description: item.description || '',
       quantity: item.quantity,
-      containerId: item.containerId.toString(),
+      toteId: item.toteId.toString(),
     });
     setEditingId(item.id);
     setShowForm(true);
@@ -68,15 +74,17 @@ function Items() {
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this item?')) return;
     try {
-      await itemsApi.delete(id);
-      loadData();
+      await deleteItem(id);
+      // Update state directly instead of refetching to avoid cache issues
+      setItems(items.filter(item => item.id !== id));
+      setError(null);
     } catch (err) {
       setError(err.message);
     }
   };
 
   const handleCancel = () => {
-    setFormData({ name: '', description: '', quantity: 1, containerId: '' });
+    setFormData({ name: '', description: '', quantity: 1, toteId: '' });
     setShowForm(false);
     setEditingId(null);
   };
@@ -91,7 +99,7 @@ function Items() {
           <button
             className="btn btn-primary"
             onClick={() => setShowForm(true)}
-            disabled={containers.length === 0}
+            disabled={totes.length === 0}
           >
             Add Item
           </button>
@@ -100,9 +108,9 @@ function Items() {
 
       {error && <div className="error-message">{error}</div>}
 
-      {containers.length === 0 && (
+      {totes.length === 0 && (
         <div className="info-message">
-          Please create at least one container before adding items.
+          Please create at least one tote before adding items.
         </div>
       )}
 
@@ -120,16 +128,16 @@ function Items() {
               />
             </div>
             <div className="form-group">
-              <label>Container *</label>
+              <label>Tote *</label>
               <select
-                value={formData.containerId}
-                onChange={(e) => setFormData({ ...formData, containerId: e.target.value })}
+                value={formData.toteId}
+                onChange={(e) => setFormData({ ...formData, toteId: e.target.value })}
                 required
               >
-                <option value="">Select a container</option>
-                {containers.map((container) => (
-                  <option key={container.id} value={container.id}>
-                    {container.name} ({container.location?.name})
+                <option value="">Select a tote</option>
+                {totes.map((tote) => (
+                  <option key={tote.id} value={tote.id}>
+                    {tote.name} {tote.location && `(${tote.location})`}
                   </option>
                 ))}
               </select>
@@ -181,13 +189,13 @@ function Items() {
             {item.description && <p className="card-description">{item.description}</p>}
             <div className="card-footer">
               <span className="badge-quantity">Qty: {item.quantity}</span>
-              <span className="badge-location">{item.container?.name}</span>
+              <span className="badge-location">{item.tote?.name}</span>
             </div>
           </div>
         ))}
       </div>
 
-      {items.length === 0 && !showForm && containers.length > 0 && (
+      {items.length === 0 && !showForm && totes.length > 0 && (
         <div className="empty-state">
           <p>No items yet. Create your first item to get started!</p>
         </div>

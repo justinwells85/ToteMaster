@@ -11,69 +11,75 @@ class ItemRepository {
    * @returns {Promise<Object>} - Items and pagination info
    */
   async findAll(options = {}) {
-    const {
-      userId,
-      toteId,
-      category,
-      page = 1,
-      limit = 10,
-      sortBy = 'created_at',
-      sortOrder = 'desc',
-    } = options;
+    // Use getClient() instead of db.query() to work around hanging issue
+    const client = await db.getClient();
+    try {
+      const {
+        userId,
+        toteId,
+        category,
+        page = 1,
+        limit = 10,
+        sortBy = 'created_at',
+        sortOrder = 'desc',
+      } = options;
 
-    const offset = (page - 1) * limit;
-    const filters = [];
-    const values = [];
-    let paramCount = 1;
+      const offset = (page - 1) * limit;
+      const filters = [];
+      const values = [];
+      let paramCount = 1;
 
-    // Build WHERE clause - always filter by userId if provided
-    if (userId) {
-      filters.push(`user_id = $${paramCount++}`);
-      values.push(userId);
+      // Build WHERE clause - always filter by userId if provided
+      if (userId) {
+        filters.push(`user_id = $${paramCount++}`);
+        values.push(userId);
+      }
+      if (toteId) {
+        filters.push(`tote_id = $${paramCount++}`);
+        values.push(toteId);
+      }
+      if (category) {
+        filters.push(`category = $${paramCount++}`);
+        values.push(category);
+      }
+
+      const whereClause = filters.length > 0 ? `WHERE ${filters.join(' AND ')}` : '';
+
+      // Validate sort column
+      const validSortColumns = ['name', 'category', 'quantity', 'condition', 'created_at', 'updated_at'];
+      const sortColumn = validSortColumns.includes(sortBy) ? sortBy : 'created_at';
+      const sortDirection = sortOrder.toLowerCase() === 'asc' ? 'ASC' : 'DESC';
+
+      // Get total count
+      const countQuery = `SELECT COUNT(*) as count FROM items ${whereClause}`;
+      const countResult = await client.query(countQuery, values);
+      const total = parseInt(countResult.rows[0].count, 10);
+
+      // Get paginated results
+      const dataQuery = `
+        SELECT * FROM items
+        ${whereClause}
+        ORDER BY ${sortColumn} ${sortDirection}
+        LIMIT $${paramCount++} OFFSET $${paramCount++}
+      `;
+      const dataResult = await client.query(dataQuery, [...values, limit, offset]);
+
+      const items = dataResult.rows.map(row => this.mapToCamelCase(row));
+
+      return {
+        data: items,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+          hasNextPage: page < Math.ceil(total / limit),
+          hasPrevPage: page > 1,
+        },
+      };
+    } finally {
+      client.release();
     }
-    if (toteId) {
-      filters.push(`tote_id = $${paramCount++}`);
-      values.push(toteId);
-    }
-    if (category) {
-      filters.push(`category = $${paramCount++}`);
-      values.push(category);
-    }
-
-    const whereClause = filters.length > 0 ? `WHERE ${filters.join(' AND ')}` : '';
-
-    // Validate sort column
-    const validSortColumns = ['name', 'category', 'quantity', 'condition', 'created_at', 'updated_at'];
-    const sortColumn = validSortColumns.includes(sortBy) ? sortBy : 'created_at';
-    const sortDirection = sortOrder.toLowerCase() === 'asc' ? 'ASC' : 'DESC';
-
-    // Get total count
-    const countQuery = `SELECT COUNT(*) as count FROM items ${whereClause}`;
-    const countResult = await db.query(countQuery, values);
-    const total = parseInt(countResult.rows[0].count, 10);
-
-    // Get paginated results
-    const dataQuery = `
-      SELECT * FROM items
-      ${whereClause}
-      ORDER BY ${sortColumn} ${sortDirection}
-      LIMIT $${paramCount++} OFFSET $${paramCount++}
-    `;
-    const dataResult = await db.query(dataQuery, [...values, limit, offset]);
-
-    const items = dataResult.rows.map(row => this.mapToCamelCase(row));
-
-    return {
-      data: items,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-        hasNextPage: page < Math.ceil(total / limit),
-        hasPrevPage: page > 1,
-      },
-    };
   }
 
   /**

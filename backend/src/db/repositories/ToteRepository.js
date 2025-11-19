@@ -11,18 +11,24 @@ class ToteRepository {
    * @returns {Promise<Array>} - Array of totes
    */
   async findAll(userId = null) {
-    let query = 'SELECT * FROM totes';
-    const params = [];
+    // Use getClient() instead of db.query() to work around pool.query() hanging issue
+    const client = await db.getClient();
+    try {
+      let query = 'SELECT * FROM totes';
+      const params = [];
 
-    if (userId) {
-      query += ' WHERE user_id = $1';
-      params.push(userId);
+      if (userId) {
+        query += ' WHERE user_id = $1';
+        params.push(userId);
+      }
+
+      query += ' ORDER BY created_at DESC';
+
+      const result = await client.query(query, params);
+      return result.rows.map(row => this.mapToCamelCase(row));
+    } finally {
+      client.release();
     }
-
-    query += ' ORDER BY created_at DESC';
-
-    const result = await db.query(query, params);
-    return result.rows.map(row => this.mapToCamelCase(row));
   }
 
   /**

@@ -2,8 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Home from './pages/Home';
-import Locations from './pages/Locations';
-import Containers from './pages/Containers';
+import Totes from './pages/Totes';
 import Items from './pages/Items';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -21,8 +20,7 @@ function Navigation() {
         {isAuthenticated && (
           <>
             <div className="nav-links">
-              <Link to="/locations" className="nav-link">Locations</Link>
-              <Link to="/containers" className="nav-link">Containers</Link>
+              <Link to="/totes" className="nav-link">Totes</Link>
               <Link to="/items" className="nav-link">Items</Link>
             </div>
             <div className="nav-user">
@@ -58,18 +56,10 @@ function App() {
                 }
               />
               <Route
-                path="/locations"
+                path="/totes"
                 element={
                   <ProtectedRoute>
-                    <Locations />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/containers"
-                element={
-                  <ProtectedRoute>
-                    <Containers />
+                    <Totes />
                   </ProtectedRoute>
                 }
               />
