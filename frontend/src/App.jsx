@@ -1,81 +1,92 @@
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
-import Home from './pages/Home';
-import Totes from './pages/Totes';
-import Items from './pages/Items';
+import MainLayout from './components/MainLayout';
+import Dashboard from './pages/Dashboard';
+import TotesPage from './pages/TotesPage';
+import ToteDetail from './pages/ToteDetail';
+import ItemsPage from './pages/ItemsPage';
+import ItemDetail from './pages/ItemDetail';
 import Login from './pages/Login';
 import Register from './pages/Register';
-import './App.css';
 
-function Navigation() {
-  const { isAuthenticated, user, logout } = useAuth();
-
-  return (
-    <nav className="navbar">
-      <div className="nav-container">
-        <Link to="/" className="nav-brand">
-          🏠 ToteMaster
-        </Link>
-        {isAuthenticated && (
-          <>
-            <div className="nav-links">
-              <Link to="/totes" className="nav-link">Totes</Link>
-              <Link to="/items" className="nav-link">Items</Link>
-            </div>
-            <div className="nav-user">
-              <span className="user-name">{user?.name}</span>
-              <button onClick={logout} className="btn btn-secondary btn-sm">
-                Logout
-              </button>
-            </div>
-          </>
-        )}
-      </div>
-    </nav>
-  );
-}
+// Create a client for TanStack Query
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: 1,
+      staleTime: 30000, // 30 seconds
+    },
+  },
+});
 
 function App() {
   return (
-    <Router>
-      <AuthProvider>
-        <div className="app">
-          <Navigation />
+    <QueryClientProvider client={queryClient}>
+      <Router>
+        <AuthProvider>
+          <Routes>
+            {/* Public routes */}
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
 
-          <main className="main-content">
-            <Routes>
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              <Route
-                path="/"
-                element={
-                  <ProtectedRoute>
-                    <Home />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/totes"
-                element={
-                  <ProtectedRoute>
-                    <Totes />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/items"
-                element={
-                  <ProtectedRoute>
-                    <Items />
-                  </ProtectedRoute>
-                }
-              />
-            </Routes>
-          </main>
-        </div>
-      </AuthProvider>
-    </Router>
+            {/* Protected routes with MainLayout */}
+            <Route
+              path="/"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <Dashboard />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/totes"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <TotesPage />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/totes/:id"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <ToteDetail />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/items"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <ItemsPage />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/items/:id"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <ItemDetail />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+          </Routes>
+        </AuthProvider>
+      </Router>
+    </QueryClientProvider>
   );
 }
 
