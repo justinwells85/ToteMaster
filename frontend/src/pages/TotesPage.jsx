@@ -10,10 +10,14 @@ import {
   flexRender,
 } from '@tanstack/react-table';
 import { getAllTotes, deleteTote, createTote } from '@/services/totesService';
+import { getAllLocations, createLocation } from '@/services/locationsService';
+import { getAllTags } from '@/services/tagsService';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
 import {
   Table,
   TableBody,
@@ -22,57 +26,141 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Search, Plus, Trash2, Eye, ArrowUpDown } from 'lucide-react';
+import { Search, Plus, Trash2, Eye, ArrowUpDown, MapPin } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function TotesPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [globalFilter, setGlobalFilter] = useState('');
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [createForm, setCreateForm] = useState({ name: '', location: '', description: '' });
+  const [createForm, setCreateForm] = useState({
+    name: '',
+    locationId: '',
+    description: '',
+    color: '',
+  });
+  const [newLocationMode, setNewLocationMode] = useState(false);
+  const [newLocation, setNewLocation] = useState({
+    name: '',
+    room: '',
+    position: '',
+    specificReference: '',
+  });
 
   const { data: totes = [], isLoading, error } = useQuery({
     queryKey: ['totes'],
     queryFn: getAllTotes,
   });
 
+  const { data: locations = [] } = useQuery({
+    queryKey: ['locations'],
+    queryFn: getAllLocations,
+  });
+
+  const { data: tags = [] } = useQuery({
+    queryKey: ['tags'],
+    queryFn: getAllTags,
+  });
+
   const deleteMutation = useMutation({
     mutationFn: deleteTote,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['totes'] });
+      toast.success('Tote deleted successfully');
+    },
+    onError: (error) => {
+      toast.error('Failed to delete tote', {
+        description: error.message,
+      });
     },
   });
 
-  const createMutation = useMutation({
+  const createToteMutation = useMutation({
     mutationFn: createTote,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['totes'] });
       setIsCreateOpen(false);
-      setCreateForm({ name: '', location: '', description: '' });
+      setCreateForm({ name: '', locationId: '', description: '', color: '' });
+      setNewLocationMode(false);
+      setNewLocation({ name: '', room: '', position: '', specificReference: '' });
+      toast.success('Tote created successfully');
+    },
+    onError: (error) => {
+      toast.error('Failed to create tote', {
+        description: error.message,
+      });
     },
   });
 
-  const handleDelete = async (toteId, toteName) => {
-    if (window.confirm(`Are you sure you want to delete "${toteName}"?`)) {
-      try {
-        await deleteMutation.mutateAsync(toteId);
-      } catch (err) {
-        alert(err.message || 'Failed to delete tote');
-      }
+  const createLocationMutation = useMutation({
+    mutationFn: createLocation,
+    onSuccess: (newLoc) => {
+      queryClient.invalidateQueries({ queryKey: ['locations'] });
+      setCreateForm({ ...createForm, locationId: newLoc.id });
+      setNewLocationMode(false);
+      setNewLocation({ name: '', room: '', position: '', specificReference: '' });
+      toast.success('Location created successfully');
+    },
+    onError: (error) => {
+      toast.error('Failed to create location', {
+        description: error.message,
+      });
+    },
+  });
+
+  const handleDelete = async (toteId, toteNumber) => {
+    if (window.confirm(`Are you sure you want to delete Tote #${toteNumber}?`)) {
+      deleteMutation.mutate(toteId);
     }
+  };
+
+  const handleCreateLocation = async (e) => {
+    e.preventDefault();
+    if (!newLocation.name.trim()) {
+      toast.error('Location name is required');
+      return;
+    }
+    createLocationMutation.mutate(newLocation);
   };
 
   const handleCreate = async (e) => {
     e.preventDefault();
-    try {
-      await createMutation.mutateAsync(createForm);
-    } catch (err) {
-      alert(err.message || 'Failed to create tote');
+
+    // If in new location mode, create location first
+    if (newLocationMode) {
+      if (!newLocation.name.trim()) {
+        toast.error('Please complete the location details or switch back to select mode');
+        return;
+      }
+      // Location will be created and tote creation will happen after location is created
+      await handleCreateLocation(e);
+      return;
     }
+
+    createToteMutation.mutate(createForm);
   };
 
   const columns = useMemo(
     () => [
+      {
+        accessorKey: 'toteNumber',
+        header: ({ column }) => {
+          return (
+            <Button
+              variant="ghost"
+              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+              className="hover:bg-accent"
+            >
+              Tote ID
+              <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+          );
+        },
+        cell: ({ row }) => (
+          <div className="font-bold text-primary">#{row.getValue('toteNumber')}</div>
+        ),
+      },
       {
         accessorKey: 'name',
         header: ({ column }) => {
@@ -88,58 +176,47 @@ export default function TotesPage() {
           );
         },
         cell: ({ row }) => (
-          <div className="font-medium">{row.getValue('name')}</div>
+          <div className="font-medium">{row.getValue('name') || <span className="text-muted-foreground italic">Unnamed</span>}</div>
         ),
       },
       {
-        accessorKey: 'location',
-        header: ({ column }) => {
+        accessorKey: 'locationId',
+        header: 'Location',
+        cell: ({ row }) => {
+          const locationId = row.getValue('locationId');
+          const location = locations.find((loc) => loc.id === locationId);
           return (
-            <Button
-              variant="ghost"
-              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-              className="hover:bg-accent"
-            >
-              Location
-              <ArrowUpDown className="ml-2 h-4 w-4" />
-            </Button>
+            <div className="flex items-center gap-2 text-muted-foreground">
+              {location ? (
+                <>
+                  <MapPin className="h-3 w-3" />
+                  <span>{location.name}</span>
+                </>
+              ) : (
+                <span className="italic">No location</span>
+              )}
+            </div>
           );
         },
-        cell: ({ row }) => (
-          <div className="text-muted-foreground">
-            {row.getValue('location') || 'No location'}
-          </div>
-        ),
       },
       {
         accessorKey: 'description',
         header: 'Description',
         cell: ({ row }) => (
           <div className="text-muted-foreground truncate max-w-md">
-            {row.getValue('description') || 'No description'}
+            {row.getValue('description') || <span className="italic">No description</span>}
           </div>
         ),
       },
       {
-        accessorKey: 'createdAt',
-        header: ({ column }) => {
-          return (
-            <Button
-              variant="ghost"
-              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-              className="hover:bg-accent"
-            >
-              Created
-              <ArrowUpDown className="ml-2 h-4 w-4" />
-            </Button>
-          );
-        },
+        accessorKey: 'color',
+        header: 'Color',
         cell: ({ row }) => {
-          const date = new Date(row.getValue('createdAt'));
-          return (
-            <div className="text-muted-foreground">
-              {date.toLocaleDateString()}
-            </div>
+          const color = row.getValue('color');
+          return color ? (
+            <Badge variant="outline">{color}</Badge>
+          ) : (
+            <span className="text-muted-foreground italic">None</span>
           );
         },
       },
@@ -161,7 +238,7 @@ export default function TotesPage() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => handleDelete(tote.id, tote.name)}
+                onClick={() => handleDelete(tote.id, tote.toteNumber)}
                 className="text-destructive hover:text-destructive"
               >
                 <Trash2 className="h-4 w-4" />
@@ -171,7 +248,7 @@ export default function TotesPage() {
         },
       },
     ],
-    [navigate]
+    [navigate, locations]
   );
 
   const table = useReactTable({
@@ -213,7 +290,7 @@ export default function TotesPage() {
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search totes..."
+                placeholder="Search totes by ID, name, or location..."
                 value={globalFilter ?? ''}
                 onChange={(e) => setGlobalFilter(e.target.value)}
                 className="pl-9"
@@ -320,29 +397,117 @@ export default function TotesPage() {
 
       {/* Create Dialog */}
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-        <DialogContent onClose={() => setIsCreateOpen(false)}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <form onSubmit={handleCreate}>
             <DialogHeader>
               <DialogTitle>Create New Tote</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium">Name *</label>
+                <label className="text-sm font-medium">
+                  Name <span className="text-muted-foreground">(optional)</span>
+                </label>
                 <Input
                   value={createForm.name}
                   onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
-                  placeholder="e.g., Holiday Decorations"
-                  required
+                  placeholder="e.g., Holiday Decorations (optional)"
                 />
+                <p className="text-xs text-muted-foreground">
+                  Tote will be automatically assigned a sequential ID number
+                </p>
               </div>
+
               <div className="space-y-2">
                 <label className="text-sm font-medium">Location</label>
-                <Input
-                  value={createForm.location}
-                  onChange={(e) => setCreateForm({ ...createForm, location: e.target.value })}
-                  placeholder="e.g., Garage, Basement, Attic"
-                />
+                {!newLocationMode ? (
+                  <div className="space-y-2">
+                    <Select
+                      value={createForm.locationId}
+                      onValueChange={(value) => setCreateForm({ ...createForm, locationId: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a location (optional)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">No location</SelectItem>
+                        {locations.map((loc) => (
+                          <SelectItem key={loc.id} value={loc.id}>
+                            {loc.name} {loc.room && `(${loc.room})`}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setNewLocationMode(true)}
+                      className="w-full"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Create New Location
+                    </Button>
+                  </div>
+                ) : (
+                  <Card className="p-4 space-y-3 border-primary">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium">New Location</p>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setNewLocationMode(false)}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                    <div className="space-y-2">
+                      <Input
+                        value={newLocation.name}
+                        onChange={(e) => setNewLocation({ ...newLocation, name: e.target.value })}
+                        placeholder="Location name *"
+                        required
+                      />
+                      <Input
+                        value={newLocation.room}
+                        onChange={(e) => setNewLocation({ ...newLocation, room: e.target.value })}
+                        placeholder="Room (e.g., Garage)"
+                      />
+                      <Input
+                        value={newLocation.position}
+                        onChange={(e) => setNewLocation({ ...newLocation, position: e.target.value })}
+                        placeholder="Position (e.g., Shelf #2)"
+                      />
+                      <Input
+                        value={newLocation.specificReference}
+                        onChange={(e) => setNewLocation({ ...newLocation, specificReference: e.target.value })}
+                        placeholder="Specific reference (e.g., Top shelf, left side)"
+                      />
+                    </div>
+                  </Card>
+                )}
               </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Color</label>
+                <Select
+                  value={createForm.color}
+                  onValueChange={(value) => setCreateForm({ ...createForm, color: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a color (optional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">No color</SelectItem>
+                    <SelectItem value="red">Red</SelectItem>
+                    <SelectItem value="blue">Blue</SelectItem>
+                    <SelectItem value="green">Green</SelectItem>
+                    <SelectItem value="yellow">Yellow</SelectItem>
+                    <SelectItem value="clear">Clear</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div className="space-y-2">
                 <label className="text-sm font-medium">Description</label>
                 <textarea
@@ -354,11 +519,14 @@ export default function TotesPage() {
               </div>
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)}>
+              <Button type="button" variant="outline" onClick={() => {
+                setIsCreateOpen(false);
+                setNewLocationMode(false);
+              }}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={createMutation.isPending}>
-                {createMutation.isPending ? 'Creating...' : 'Create Tote'}
+              <Button type="submit" disabled={createToteMutation.isPending || createLocationMutation.isPending}>
+                {createToteMutation.isPending || createLocationMutation.isPending ? 'Creating...' : 'Create Tote'}
               </Button>
             </DialogFooter>
           </form>
