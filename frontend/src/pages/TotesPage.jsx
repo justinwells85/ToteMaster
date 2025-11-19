@@ -9,10 +9,11 @@ import {
   getPaginationRowModel,
   flexRender,
 } from '@tanstack/react-table';
-import { getAllTotes, deleteTote } from '@/services/totesService';
+import { getAllTotes, deleteTote, createTote } from '@/services/totesService';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import {
   Table,
   TableBody,
@@ -27,6 +28,8 @@ export default function TotesPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [globalFilter, setGlobalFilter] = useState('');
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [createForm, setCreateForm] = useState({ name: '', location: '', description: '' });
 
   const { data: totes = [], isLoading, error } = useQuery({
     queryKey: ['totes'],
@@ -40,6 +43,15 @@ export default function TotesPage() {
     },
   });
 
+  const createMutation = useMutation({
+    mutationFn: createTote,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['totes'] });
+      setIsCreateOpen(false);
+      setCreateForm({ name: '', location: '', description: '' });
+    },
+  });
+
   const handleDelete = async (toteId, toteName) => {
     if (window.confirm(`Are you sure you want to delete "${toteName}"?`)) {
       try {
@@ -47,6 +59,15 @@ export default function TotesPage() {
       } catch (err) {
         alert(err.message || 'Failed to delete tote');
       }
+    }
+  };
+
+  const handleCreate = async (e) => {
+    e.preventDefault();
+    try {
+      await createMutation.mutateAsync(createForm);
+    } catch (err) {
+      alert(err.message || 'Failed to create tote');
     }
   };
 
@@ -199,7 +220,7 @@ export default function TotesPage() {
               />
             </div>
           </div>
-          <Button onClick={() => navigate('/totes/new')} className="gap-2">
+          <Button onClick={() => setIsCreateOpen(true)} className="gap-2">
             <Plus className="h-4 w-4" />
             Add Tote
           </Button>
@@ -296,6 +317,53 @@ export default function TotesPage() {
           </div>
         )}
       </Card>
+
+      {/* Create Dialog */}
+      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+        <DialogContent onClose={() => setIsCreateOpen(false)}>
+          <form onSubmit={handleCreate}>
+            <DialogHeader>
+              <DialogTitle>Create New Tote</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Name *</label>
+                <Input
+                  value={createForm.name}
+                  onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
+                  placeholder="e.g., Holiday Decorations"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Location</label>
+                <Input
+                  value={createForm.location}
+                  onChange={(e) => setCreateForm({ ...createForm, location: e.target.value })}
+                  placeholder="e.g., Garage, Basement, Attic"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Description</label>
+                <textarea
+                  value={createForm.description}
+                  onChange={(e) => setCreateForm({ ...createForm, description: e.target.value })}
+                  className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  placeholder="Optional description..."
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={createMutation.isPending}>
+                {createMutation.isPending ? 'Creating...' : 'Create Tote'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
