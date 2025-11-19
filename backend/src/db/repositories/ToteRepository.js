@@ -56,26 +56,38 @@ class ToteRepository {
    * @returns {Promise<Object>} - Created tote
    */
   async create(toteData) {
-    const id = toteData.id || `tote-${nanoid(10)}`;
-    const now = new Date().toISOString();
+    const client = await db.getClient();
+    try {
+      const id = toteData.id || `tote-${nanoid(10)}`;
+      const now = new Date().toISOString();
 
-    const result = await db.query(
-      `INSERT INTO totes (id, name, location, description, color, user_id, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-       RETURNING *`,
-      [
-        id,
-        toteData.name,
-        toteData.location || null,
-        toteData.description || null,
-        toteData.color || null,
-        toteData.userId || null,
-        toteData.createdAt || now,
-        toteData.updatedAt || now,
-      ]
-    );
+      // Get next tote number from sequence
+      const seqResult = await client.query(`SELECT nextval('tote_number_seq') as tote_number`);
+      const toteNumber = seqResult.rows[0].tote_number;
 
-    return this.mapToCamelCase(result.rows[0]);
+      const result = await client.query(
+        `INSERT INTO totes (id, tote_number, name, location, location_id, description, color, photos, user_id, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+         RETURNING *`,
+        [
+          id,
+          toteNumber,
+          toteData.name || null,
+          toteData.location || null,
+          toteData.locationId || null,
+          toteData.description || null,
+          toteData.color || null,
+          toteData.photos || [],
+          toteData.userId || null,
+          toteData.createdAt || now,
+          toteData.updatedAt || now,
+        ]
+      );
+
+      return this.mapToCamelCase(result.rows[0]);
+    } finally {
+      client.release();
+    }
   }
 
   /**
@@ -99,6 +111,10 @@ class ToteRepository {
       fields.push(`location = $${paramCount++}`);
       values.push(updates.location);
     }
+    if (updates.locationId !== undefined) {
+      fields.push(`location_id = $${paramCount++}`);
+      values.push(updates.locationId);
+    }
     if (updates.description !== undefined) {
       fields.push(`description = $${paramCount++}`);
       values.push(updates.description);
@@ -106,6 +122,10 @@ class ToteRepository {
     if (updates.color !== undefined) {
       fields.push(`color = $${paramCount++}`);
       values.push(updates.color);
+    }
+    if (updates.photos !== undefined) {
+      fields.push(`photos = $${paramCount++}`);
+      values.push(updates.photos);
     }
 
     if (fields.length === 0) {
@@ -209,10 +229,13 @@ class ToteRepository {
   mapToCamelCase(row) {
     return {
       id: row.id,
+      toteNumber: row.tote_number,
       name: row.name,
       location: row.location,
+      locationId: row.location_id,
       description: row.description,
       color: row.color,
+      photos: row.photos || [],
       userId: row.user_id,
       createdAt: row.created_at,
       updatedAt: row.updated_at,

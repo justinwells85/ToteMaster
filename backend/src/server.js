@@ -6,6 +6,7 @@ import totesRouter from './routes/totes.js';
 import authRouter from './routes/auth.js';
 import locationsRouter from './routes/locations.js';
 import tagsRouter from './routes/tags.js';
+import testDataRouter from './routes/testData.js';
 import { requestLogger } from './middleware/logger.js';
 import logger from './utils/logger.js';
 import db from './db/index.js';
@@ -35,6 +36,7 @@ app.get('/', (req, res) => {
       totes: '/api/totes',
       locations: '/api/locations',
       tags: '/api/tags',
+      testData: '/api/test-data',
     },
   });
 });
@@ -44,6 +46,7 @@ app.use('/api/items', itemsRouter);
 app.use('/api/totes', totesRouter);
 app.use('/api/locations', locationsRouter);
 app.use('/api/tags', tagsRouter);
+app.use('/api/test-data', testDataRouter);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

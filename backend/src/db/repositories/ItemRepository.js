@@ -183,7 +183,7 @@ class ItemRepository {
     const now = new Date().toISOString();
 
     const result = await db.query(
-      `INSERT INTO items (id, name, description, category, tote_id, quantity, condition, tags, photo_url, user_id, created_at, updated_at)
+      `INSERT INTO items (id, name, description, category, tote_id, quantity, condition, tags, photos, user_id, created_at, updated_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
        RETURNING *`,
       [
@@ -195,7 +195,7 @@ class ItemRepository {
         itemData.quantity || 1,
         itemData.condition || 'good',
         itemData.tags || [],
-        itemData.photoUrl || null,
+        itemData.photos || [],
         itemData.userId || null,
         itemData.createdAt || now,
         itemData.updatedAt || now,
@@ -246,9 +246,9 @@ class ItemRepository {
       fields.push(`tags = $${paramCount++}`);
       values.push(updates.tags);
     }
-    if (updates.photoUrl !== undefined) {
-      fields.push(`photo_url = $${paramCount++}`);
-      values.push(updates.photoUrl);
+    if (updates.photos !== undefined) {
+      fields.push(`photos = $${paramCount++}`);
+      values.push(updates.photos);
     }
 
     if (fields.length === 0) {
@@ -333,7 +333,7 @@ class ItemRepository {
       quantity: row.quantity,
       condition: row.condition,
       tags: row.tags || [],
-      photoUrl: row.photo_url,
+      photos: row.photos || [],
       userId: row.user_id,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
