@@ -1,6 +1,5 @@
 import db from '../index.js';
 import { nanoid } from 'nanoid';
-import logger from '../../utils/logger.js';
 
 /**
  * Tote Repository - Database operations for totes
@@ -12,9 +11,7 @@ class ToteRepository {
    * @returns {Promise<Array>} - Array of totes
    */
   async findAll(userId = null) {
-    logger.info('[ToteRepository] findAll called', { userId });
-
-    // Use getClient() instead of db.query() to work around hanging issue
+    // Use getClient() instead of db.query() to work around pool.query() hanging issue
     const client = await db.getClient();
     try {
       let query = 'SELECT * FROM totes';
@@ -27,13 +24,8 @@ class ToteRepository {
 
       query += ' ORDER BY created_at DESC';
 
-      logger.info('[ToteRepository] Executing query:', { query, params });
       const result = await client.query(query, params);
-      logger.info('[ToteRepository] Query completed', { rowCount: result.rows.length });
-
-      const mapped = result.rows.map(row => this.mapToCamelCase(row));
-      logger.info('[ToteRepository] Finished mapping, returning results');
-      return mapped;
+      return result.rows.map(row => this.mapToCamelCase(row));
     } finally {
       client.release();
     }

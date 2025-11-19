@@ -36,45 +36,17 @@ pool.on('error', (err) => {
  */
 export const query = async (text, params) => {
   const start = Date.now();
-  const callStack = new Error().stack;
-  console.log('[DB] query() called, about to execute...');
-  console.log('[DB] Call stack:', callStack.split('\n').slice(1, 4).join('\n'));
-  console.log('[DB] Pool status:', {
-    total: pool.totalCount,
-    idle: pool.idleCount,
-    waiting: pool.waitingCount
-  });
-
   try {
-    console.log('[DB] Calling pool.query...');
-
-    // Add a timeout wrapper to detect hanging queries
-    const queryPromise = pool.query(text, params);
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Query timeout after 10 seconds')), 10000);
-    });
-
-    const res = await Promise.race([queryPromise, timeoutPromise]);
-    console.log('[DB] pool.query returned');
+    const res = await pool.query(text, params);
     const duration = Date.now() - start;
 
     if (process.env.NODE_ENV === 'development') {
       console.log('Executed query', { text, duration, rows: res.rowCount });
     }
 
-    console.log('[DB] About to return result');
-    const returnValue = res;
-    console.log('[DB] Returning:', { rowCount: returnValue.rowCount, hasRows: !!returnValue.rows });
-    return returnValue;
+    return res;
   } catch (error) {
-    const duration = Date.now() - start;
-    console.error('[DB] Database query error after', duration, 'ms:', error.message);
-    console.error('[DB] Query that failed:', text);
-    console.error('[DB] Pool status at error:', {
-      total: pool.totalCount,
-      idle: pool.idleCount,
-      waiting: pool.waitingCount
-    });
+    console.error('Database query error:', error);
     throw error;
   }
 };
