@@ -3,11 +3,12 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getAllTotes, updateTote, deleteTote } from '@/services/totesService';
 import { getAllItems } from '@/services/itemsService';
+import { generateToteLabel } from '@/lib/labelGenerator';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { ArrowLeft, Edit, Trash2, Package, MapPin } from 'lucide-react';
+import { ArrowLeft, Edit, Trash2, Package, MapPin, QrCode } from 'lucide-react';
 
 export default function ToteDetail() {
   const { id } = useParams();
@@ -75,6 +76,15 @@ export default function ToteDetail() {
     }
   };
 
+  const handleGenerateLabel = async () => {
+    if (!tote) return;
+    try {
+      await generateToteLabel(tote);
+    } catch (err) {
+      alert(err.message || 'Failed to generate label');
+    }
+  };
+
   if (!tote) {
     return (
       <div className="container mx-auto px-8 py-8">
@@ -118,6 +128,10 @@ export default function ToteDetail() {
             </div>
           </div>
           <div className="flex gap-2">
+            <Button variant="outline" onClick={handleGenerateLabel}>
+              <QrCode className="mr-2 h-4 w-4" />
+              Generate Label
+            </Button>
             <Button variant="outline" onClick={handleEdit}>
               <Edit className="mr-2 h-4 w-4" />
               Edit
