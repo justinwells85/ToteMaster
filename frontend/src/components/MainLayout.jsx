@@ -65,7 +65,7 @@ export default function MainLayout({ children }) {
           </div>
           <div className="ml-auto flex items-center gap-4">
             <span className="text-sm text-muted-foreground">
-              {user?.username || 'User'}
+              {user?.name || user?.email || 'User'}
             </span>
             <Button variant="outline" size="sm" onClick={handleLogout}>
               Logout

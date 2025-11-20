@@ -112,7 +112,7 @@ router.get('/me', requireAuth, async (req, res) => {
       });
     }
 
-    res.status(200).json(user);
+    res.status(200).json({ user });
   } catch (error) {
     logger.error('Get user error:', error);
 
@@ -140,7 +140,7 @@ router.put('/me', requireAuth, async (req, res) => {
 
     logger.info(`User profile updated: ${user.email}`);
 
-    res.status(200).json(user);
+    res.status(200).json({ user });
   } catch (error) {
     logger.error('Update profile error:', error);
 
