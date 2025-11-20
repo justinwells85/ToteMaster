@@ -13,10 +13,10 @@ on:
           - production
           - staging
 
-  # Automatic deployment on push to main (optional - uncomment if desired)
-  # push:
-  #   branches:
-  #     - main
+  # Automatic deployment on push to main
+  push:
+    branches:
+      - main
 
 jobs:
   deploy:
