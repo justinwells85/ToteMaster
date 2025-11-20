@@ -1,0 +1,120 @@
+name: Deploy to Windows
+
+on:
+  # Manual deployment trigger
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+
+  # Automatic deployment on push to main (optional - uncomment if desired)
+  # push:
+  #   branches:
+  #     - main
+
+jobs:
+  deploy:
+    name: Deploy to Windows Machine
+    runs-on: self-hosted  # This will run on your Windows self-hosted runner
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create .env files if they don't exist
+        shell: powershell
+        run: |
+          # Create backend .env.production if it doesn't exist
+          if (-Not (Test-Path "backend\.env.production")) {
+            Write-Host "Creating backend/.env.production from example..."
+            if (Test-Path "backend\.env.production.example") {
+              Copy-Item "backend\.env.production.example" "backend\.env.production"
+            } else {
+              Write-Host "Warning: backend/.env.production.example not found"
+            }
+          }
+
+          # Create root .env if it doesn't exist
+          if (-Not (Test-Path ".env")) {
+            Write-Host "Creating .env from example..."
+            if (Test-Path ".env.example") {
+              Copy-Item ".env.example" ".env"
+            }
+          }
+
+      - name: Stop existing containers
+        shell: powershell
+        run: |
+          Write-Host "Stopping existing containers..."
+          docker-compose -f docker-compose.prod.yml down
+        continue-on-error: true
+
+      - name: Pull latest images (if using pre-built images)
+        shell: powershell
+        run: |
+          Write-Host "Pulling postgres image..."
+          docker pull postgres:16-alpine
+        continue-on-error: true
+
+      - name: Build Docker images
+        shell: powershell
+        run: |
+          Write-Host "Building Docker images..."
+          docker-compose -f docker-compose.prod.yml build --no-cache
+
+      - name: Start containers
+        shell: powershell
+        run: |
+          Write-Host "Starting containers..."
+          docker-compose -f docker-compose.prod.yml up -d
+
+      - name: Wait for services to be healthy
+        shell: powershell
+        run: |
+          Write-Host "Waiting for services to be healthy..."
+          Start-Sleep -Seconds 30
+
+          # Check if containers are running
+          docker-compose -f docker-compose.prod.yml ps
+
+      - name: Run database migrations
+        shell: powershell
+        run: |
+          Write-Host "Running database migrations..."
+          docker-compose -f docker-compose.prod.yml exec -T backend npm run migrate
+        continue-on-error: true
+
+      - name: Display container logs (last 50 lines)
+        if: always()
+        shell: powershell
+        run: |
+          Write-Host "=== Backend Logs ==="
+          docker-compose -f docker-compose.prod.yml logs --tail=50 backend
+          Write-Host "`n=== Frontend Logs ==="
+          docker-compose -f docker-compose.prod.yml logs --tail=50 frontend
+          Write-Host "`n=== Container Status ==="
+          docker-compose -f docker-compose.prod.yml ps
+
+      - name: Deployment summary
+        shell: powershell
+        run: |
+          Write-Host "========================================" -ForegroundColor Green
+          Write-Host "Deployment Complete!" -ForegroundColor Green
+          Write-Host "========================================" -ForegroundColor Green
+          Write-Host ""
+          Write-Host "Frontend: http://localhost" -ForegroundColor Cyan
+          Write-Host "Backend API: http://localhost:3000" -ForegroundColor Cyan
+          Write-Host "Database: localhost:5432" -ForegroundColor Cyan
+          Write-Host ""
+          Write-Host "To view logs:" -ForegroundColor Yellow
+          Write-Host "  docker-compose -f docker-compose.prod.yml logs -f" -ForegroundColor White
+          Write-Host ""
+          Write-Host "To stop services:" -ForegroundColor Yellow
+          Write-Host "  docker-compose -f docker-compose.prod.yml down" -ForegroundColor White
+          Write-Host ""

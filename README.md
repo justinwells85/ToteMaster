@@ -306,6 +306,40 @@ docker inspect totemaster-backend | grep -A 10 Health
 docker inspect totemaster-frontend | grep -A 10 Health
 ```
 
+### Windows Home Server Deployment
+
+Deploy ToteMaster to a Windows machine on your home network with automatic GitHub Actions deployment:
+
+**Quick Start:**
+
+1. **Install Prerequisites**
+   - Docker Desktop for Windows (already installed)
+   - Git for Windows
+
+2. **Configure Environment**
+   ```powershell
+   cd ToteMaster
+   copy backend\.env.production.example backend\.env.production
+   copy .env.example .env
+   # Edit the files and set secure passwords/secrets
+   ```
+
+3. **Test Manual Deployment**
+   ```powershell
+   .\deploy-windows.ps1
+   ```
+
+4. **Set Up Automatic Deployment**
+   - Install GitHub Actions self-hosted runner on your Windows machine
+   - Deploy from GitHub Actions with one click
+
+**📖 Full Setup Guide:** See [WINDOWS_DEPLOYMENT.md](WINDOWS_DEPLOYMENT.md) for complete step-by-step instructions.
+
+**Access Your App:**
+- Frontend: http://localhost (or your Windows machine IP)
+- Backend: http://localhost:3000
+- From other devices: http://YOUR_WINDOWS_IP
+
 ### Cloud Deployment
 
 The Docker setup is ready for deployment to:
@@ -537,6 +571,13 @@ Tote Master uses GitHub Actions for continuous integration and deployment automa
 - Tests both development and production targets
 - Validates docker-compose configurations
 - Uses build caching for faster builds
+
+**Windows Deployment Workflow** (`.github/workflows/deploy-windows.yml`)
+- Deploys to Windows machines using self-hosted runners
+- Supports manual or automatic deployment triggers
+- Builds and deploys Docker containers
+- Runs database migrations automatically
+- See [WINDOWS_DEPLOYMENT.md](WINDOWS_DEPLOYMENT.md) for setup guide
 
 ### Workflow Status
 
