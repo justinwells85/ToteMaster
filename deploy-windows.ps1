@@ -16,9 +16,10 @@ Write-Host ""
 Write-Host "Checking Docker..." -ForegroundColor Yellow
 try {
     docker info | Out-Null
-    Write-Host "✓ Docker is running" -ForegroundColor Green
-} catch {
-    Write-Host "✗ Docker is not running. Please start Docker Desktop." -ForegroundColor Red
+    Write-Host "OK Docker is running" -ForegroundColor Green
+}
+catch {
+    Write-Host "ERROR Docker is not running. Please start Docker Desktop." -ForegroundColor Red
     exit 1
 }
 
@@ -30,7 +31,7 @@ if (-Not (Test-Path "backend\.env.production")) {
     if (Test-Path "backend\.env.production.example") {
         Write-Host "  Creating from example..." -ForegroundColor Yellow
         Copy-Item "backend\.env.production.example" "backend\.env.production"
-        Write-Host "  ⚠ IMPORTANT: Edit backend/.env.production and set:" -ForegroundColor Red
+        Write-Host "  WARNING: Edit backend/.env.production and set:" -ForegroundColor Red
         Write-Host "    - DB_PASSWORD (secure password)" -ForegroundColor Red
         Write-Host "    - JWT_SECRET (long random string)" -ForegroundColor Red
         Write-Host ""
@@ -39,12 +40,14 @@ if (-Not (Test-Path "backend\.env.production")) {
             Write-Host "Deployment cancelled. Please configure backend/.env.production first." -ForegroundColor Red
             exit 1
         }
-    } else {
-        Write-Host "✗ backend/.env.production.example not found!" -ForegroundColor Red
+    }
+    else {
+        Write-Host "ERROR backend/.env.production.example not found!" -ForegroundColor Red
         exit 1
     }
-} else {
-    Write-Host "✓ backend/.env.production exists" -ForegroundColor Green
+}
+else {
+    Write-Host "OK backend/.env.production exists" -ForegroundColor Green
 }
 
 if (-Not (Test-Path ".env")) {
@@ -52,27 +55,29 @@ if (-Not (Test-Path ".env")) {
     if (Test-Path ".env.example") {
         Write-Host "  Creating from example..." -ForegroundColor Yellow
         Copy-Item ".env.example" ".env"
-        Write-Host "✓ Created .env" -ForegroundColor Green
+        Write-Host "OK Created .env" -ForegroundColor Green
     }
-} else {
-    Write-Host "✓ .env exists" -ForegroundColor Green
+}
+else {
+    Write-Host "OK .env exists" -ForegroundColor Green
 }
 
 # Stop existing containers
 Write-Host "`nStopping existing containers..." -ForegroundColor Yellow
 docker-compose -f $ComposeFile down
-Write-Host "✓ Containers stopped" -ForegroundColor Green
+Write-Host "OK Containers stopped" -ForegroundColor Green
 
 # Build images
 if (-Not $NoBuild) {
     Write-Host "`nBuilding Docker images..." -ForegroundColor Yellow
     docker-compose -f $ComposeFile build
     if ($LASTEXITCODE -ne 0) {
-        Write-Host "✗ Build failed!" -ForegroundColor Red
+        Write-Host "ERROR Build failed!" -ForegroundColor Red
         exit 1
     }
-    Write-Host "✓ Images built successfully" -ForegroundColor Green
-} else {
+    Write-Host "OK Images built successfully" -ForegroundColor Green
+}
+else {
     Write-Host "`nSkipping build (using existing images)..." -ForegroundColor Yellow
 }
 
@@ -80,10 +85,10 @@ if (-Not $NoBuild) {
 Write-Host "`nStarting containers..." -ForegroundColor Yellow
 docker-compose -f $ComposeFile up -d
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "✗ Failed to start containers!" -ForegroundColor Red
+    Write-Host "ERROR Failed to start containers!" -ForegroundColor Red
     exit 1
 }
-Write-Host "✓ Containers started" -ForegroundColor Green
+Write-Host "OK Containers started" -ForegroundColor Green
 
 # Wait for services
 Write-Host "`nWaiting for services to be ready..." -ForegroundColor Yellow
@@ -97,9 +102,10 @@ docker-compose -f $ComposeFile ps
 Write-Host "`nRunning database migrations..." -ForegroundColor Yellow
 docker-compose -f $ComposeFile exec -T backend npm run migrate
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "⚠ Migrations may have failed (this might be OK if already run)" -ForegroundColor Yellow
-} else {
-    Write-Host "✓ Migrations completed" -ForegroundColor Green
+    Write-Host "WARNING Migrations may have failed (this might be OK if already run)" -ForegroundColor Yellow
+}
+else {
+    Write-Host "OK Migrations completed" -ForegroundColor Green
 }
 
 # Deployment complete
