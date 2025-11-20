@@ -48,6 +48,23 @@ jobs:
             }
           }
 
+      - name: Load environment variables
+        shell: powershell
+        run: |
+          Write-Host "Loading environment variables from backend/.env.production..."
+          if (Test-Path "backend\.env.production") {
+            Get-Content "backend\.env.production" | ForEach-Object {
+              if ($_ -match '^\s*([^#][^=]*)\s*=\s*(.*)$') {
+                $name = $matches[1].Trim()
+                $value = $matches[2].Trim()
+                Write-Output "$name=$value" >> $env:GITHUB_ENV
+              }
+            }
+            Write-Host "Environment variables loaded"
+          } else {
+            Write-Host "Warning: backend/.env.production not found"
+          }
+
       - name: Stop existing containers
         shell: powershell
         run: |

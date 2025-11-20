@@ -62,6 +62,20 @@ else {
     Write-Host "OK .env exists" -ForegroundColor Green
 }
 
+# Load environment variables from backend/.env.production for docker-compose
+Write-Host "`nLoading environment variables..." -ForegroundColor Yellow
+if (Test-Path "backend\.env.production") {
+    Get-Content "backend\.env.production" | ForEach-Object {
+        if ($_ -match '^\s*([^#][^=]*)\s*=\s*(.*)$') {
+            $name = $matches[1].Trim()
+            $value = $matches[2].Trim()
+            [Environment]::SetEnvironmentVariable($name, $value, "Process")
+            Write-Host "  Loaded $name" -ForegroundColor Gray
+        }
+    }
+    Write-Host "OK Environment variables loaded" -ForegroundColor Green
+}
+
 # Stop existing containers
 Write-Host "`nStopping existing containers..." -ForegroundColor Yellow
 docker-compose -f $ComposeFile down
