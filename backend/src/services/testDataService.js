@@ -125,42 +125,51 @@ export const generateTestData = async (userId) => {
     }
     logger.info(`Created ${createdTotes.length} totes`);
 
-    // Create 1-4 items per tote
+    // Create 2-8 items per tote
     let totalItems = 0;
     for (const tote of createdTotes) {
-      const itemCount = Math.floor(Math.random() * 4) + 1; // 1-4 items
+      const itemCount = Math.floor(Math.random() * 7) + 2; // 2-8 items
+      logger.info(`Creating ${itemCount} items for tote ${tote.toteNumber}`);
 
       for (let i = 0; i < itemCount; i++) {
-        const randomItem = SAMPLE_ITEMS[Math.floor(Math.random() * SAMPLE_ITEMS.length)];
+        try {
+          const randomItem = SAMPLE_ITEMS[Math.floor(Math.random() * SAMPLE_ITEMS.length)];
 
-        const itemData = {
-          name: randomItem.name,
-          description: SAMPLE_DESCRIPTIONS[Math.floor(Math.random() * SAMPLE_DESCRIPTIONS.length)],
-          category: randomItem.category,
-          toteId: tote.id,
-          quantity: Math.floor(Math.random() * 5) + 1,
-          condition: ['new', 'good', 'fair', 'poor'][Math.floor(Math.random() * 4)],
-          tags: [],
-          photos: [],
-          userId,
-        };
+          // Add item number to make each item more unique
+          const itemData = {
+            name: `${randomItem.name} #${i + 1}`,
+            description: SAMPLE_DESCRIPTIONS[Math.floor(Math.random() * SAMPLE_DESCRIPTIONS.length)],
+            category: randomItem.category,
+            toteId: tote.id,
+            quantity: Math.floor(Math.random() * 5) + 1,
+            condition: ['new', 'good', 'fair', 'poor'][Math.floor(Math.random() * 4)],
+            tags: [],
+            photos: [],
+            userId,
+          };
 
-        const item = await ItemRepository.create(itemData);
-        totalItems++;
+          const item = await ItemRepository.create(itemData);
+          totalItems++;
+          logger.info(`Created item ${totalItems}: ${item.name} in tote ${tote.toteNumber}`);
 
-        // Add 0-2 random tags to the item
-        const numTags = Math.floor(Math.random() * 3);
-        for (let j = 0; j < numTags; j++) {
-          const randomTag = createdTags[Math.floor(Math.random() * createdTags.length)];
-          try {
-            await TagRepository.addToItem(item.id, randomTag.id);
-          } catch (error) {
-            // Tag might already be added, ignore
+          // Add 0-2 random tags to the item
+          const numTags = Math.floor(Math.random() * 3);
+          for (let j = 0; j < numTags; j++) {
+            const randomTag = createdTags[Math.floor(Math.random() * createdTags.length)];
+            try {
+              await TagRepository.addToItem(item.id, randomTag.id);
+            } catch (error) {
+              // Tag might already be added, ignore
+              logger.debug(`Tag already added to item: ${error.message}`);
+            }
           }
+        } catch (error) {
+          logger.error(`Error creating item ${i + 1} for tote ${tote.toteNumber}:`, error);
+          throw error; // Re-throw to rollback transaction
         }
       }
     }
-    logger.info(`Created ${totalItems} items`);
+    logger.info(`Successfully created ${totalItems} items across ${createdTotes.length} totes`);
 
     await client.query('COMMIT');
 

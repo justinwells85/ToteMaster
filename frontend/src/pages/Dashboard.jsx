@@ -73,14 +73,18 @@ export default function Dashboard() {
     try {
       setIsGenerating(true);
       const result = await generateTestData();
+
+      // Refetch all data immediately after generation
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['totes'], refetchType: 'active' }),
+        queryClient.invalidateQueries({ queryKey: ['items'], refetchType: 'active' }),
+        queryClient.invalidateQueries({ queryKey: ['locations'], refetchType: 'active' }),
+        queryClient.invalidateQueries({ queryKey: ['tags'], refetchType: 'active' }),
+      ]);
+
       toast.success('Test data generated successfully!', {
         description: `Created ${result.summary.totes} totes with ${result.summary.items} items`,
       });
-      // Refetch all data
-      queryClient.invalidateQueries(['totes']);
-      queryClient.invalidateQueries(['items']);
-      queryClient.invalidateQueries(['locations']);
-      queryClient.invalidateQueries(['tags']);
     } catch (error) {
       toast.error('Failed to generate test data', {
         description: error.message,
@@ -98,14 +102,18 @@ export default function Dashboard() {
     try {
       setIsClearing(true);
       const result = await clearAllData();
+
+      // Refetch all data immediately after clearing
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['totes'], refetchType: 'active' }),
+        queryClient.invalidateQueries({ queryKey: ['items'], refetchType: 'active' }),
+        queryClient.invalidateQueries({ queryKey: ['locations'], refetchType: 'active' }),
+        queryClient.invalidateQueries({ queryKey: ['tags'], refetchType: 'active' }),
+      ]);
+
       toast.success('All data cleared successfully!', {
         description: `Deleted ${result.summary.totes} totes and ${result.summary.items} items`,
       });
-      // Refetch all data
-      queryClient.invalidateQueries(['totes']);
-      queryClient.invalidateQueries(['items']);
-      queryClient.invalidateQueries(['locations']);
-      queryClient.invalidateQueries(['tags']);
     } catch (error) {
       toast.error('Failed to clear data', {
         description: error.message,
@@ -345,7 +353,7 @@ export default function Dashboard() {
             </Button>
           </div>
           <p className="text-sm text-muted-foreground mt-3">
-            Generate test data creates 10 totes with 1-4 random items each. Clear all data will permanently delete all your totes, items, locations, and tags.
+            Generate test data creates 10 totes with 2-8 unique items each (20-80 total items). Clear all data will permanently delete all your totes, items, locations, and tags.
           </p>
         </CardContent>
       </Card>
