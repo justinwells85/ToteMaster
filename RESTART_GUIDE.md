@@ -2,6 +2,33 @@
 
 Quick reference for restarting your ToteMaster development servers.
 
+## 🚀 Quick Start: Update & Restart (Recommended)
+
+**For pulling latest code AND restarting servers:**
+
+### Windows
+Double-click **`update-and-restart.bat`** or run:
+```powershell
+.\update-and-restart.bat
+```
+
+### Mac/Linux
+```bash
+./update-and-restart.sh
+```
+
+This will automatically:
+1. ✓ Stop any running servers
+2. ✓ Pull latest code from git
+3. ✓ Install dependencies if needed (npm install)
+4. ✓ Restart both backend and frontend servers
+
+---
+
+## 🔄 Simple Restart (Without Git Pull)
+
+**For just restarting servers without pulling code:**
+
 ## Windows
 
 ### Option 1: Double-click (Easiest)
