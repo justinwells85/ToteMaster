@@ -80,5 +80,6 @@ Write-Host "Backend:  http://localhost:3000" -ForegroundColor White
 Write-Host "Frontend: http://localhost:5173" -ForegroundColor White
 Write-Host ""
 Write-Host "Check the new PowerShell windows for server logs." -ForegroundColor Gray
-Write-Host "Press any key to exit this window..." -ForegroundColor Gray
-$null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+Write-Host ""
+Write-Host "Press any key to close this window..." -ForegroundColor Yellow
+Read-Host
