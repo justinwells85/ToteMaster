@@ -4,18 +4,15 @@
  */
 
 export const ToteSchema = {
-  name: {
-    type: 'string',
-    required: true,
-    minLength: 1,
-    maxLength: 200,
-    trim: true,
-  },
   location: {
     type: 'string',
     required: false,
     maxLength: 200,
     trim: true,
+  },
+  locationId: {
+    type: 'string',
+    required: false,
   },
   description: {
     type: 'string',
@@ -29,16 +26,18 @@ export const ToteSchema = {
     maxLength: 50,
     trim: true,
   },
-  label: {
-    type: 'string',
+  photos: {
+    type: 'array',
     required: false,
-    maxLength: 100,
-    trim: true,
+    default: [],
+    itemType: 'string',
   },
-  size: {
-    type: 'string',
+  tags: {
+    type: 'array',
     required: false,
-    enum: ['small', 'medium', 'large', 'extra-large'],
+    default: [],
+    itemType: 'string',
+    maxLength: 50, // Max 50 tags
   },
 };
 
@@ -116,6 +115,20 @@ export function validateTote(tote, isUpdate = false) {
           errors.push(`${field} must be an integer`);
         }
       }
+
+      // Array validations
+      if (rules.type === 'array' && Array.isArray(value)) {
+        if (rules.maxLength && value.length > rules.maxLength) {
+          errors.push(`${field} must not exceed ${rules.maxLength} items`);
+        }
+        if (rules.itemType) {
+          value.forEach((item, index) => {
+            if (typeof item !== rules.itemType) {
+              errors.push(`${field}[${index}] must be a ${rules.itemType}`);
+            }
+          });
+        }
+      }
     }
   }
 
@@ -155,6 +168,11 @@ export function sanitizeTote(tote) {
     if (rules.trim && typeof value === 'string') {
       sanitized[field] = value.trim();
     }
+
+    // Ensure arrays are arrays
+    if (rules.type === 'array' && !Array.isArray(value) && value !== undefined) {
+      sanitized[field] = [];
+    }
   }
 
   return sanitized;
@@ -169,11 +187,11 @@ export function createToteModel(data) {
   const sanitized = sanitizeTote(data);
 
   return {
-    name: sanitized.name,
     location: sanitized.location || '',
+    locationId: sanitized.locationId || null,
     description: sanitized.description || '',
     color: sanitized.color || '',
-    label: sanitized.label || '',
-    size: sanitized.size || '',
+    photos: sanitized.photos || [],
+    tags: sanitized.tags || [],
   };
 }

@@ -173,7 +173,7 @@ export default function ItemDetail() {
               )}
               <div className="flex items-center gap-1">
                 <Package className="h-4 w-4" />
-                <span>{tote ? tote.name : 'No tote'}</span>
+                <span>{tote ? `Tote #${tote.id}` : 'No tote'}</span>
               </div>
               {itemTags.length > 0 && (
                 <div className="flex items-center gap-1">
@@ -223,7 +223,7 @@ export default function ItemDetail() {
                 onClick={() => navigate(`/totes/${tote.id}`)}
                 className="p-4 rounded-md border hover:bg-accent cursor-pointer transition-colors"
               >
-                <p className="font-medium">{tote.name || `Tote #${tote.toteNumber}`}</p>
+                <p className="font-medium">Tote #{tote.id}</p>
                 <p className="text-sm text-muted-foreground">
                   {tote.location || 'No location specified'}
                 </p>
@@ -353,7 +353,7 @@ export default function ItemDetail() {
                   <option value="">No tote</option>
                   {totes.map((tote) => (
                     <option key={tote.id} value={tote.id}>
-                      {tote.name}
+                      Tote #{tote.id}
                     </option>
                   ))}
                 </Select>

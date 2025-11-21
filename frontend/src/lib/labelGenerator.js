@@ -23,20 +23,11 @@ const drawLabel = (pdf, tote, col, row, qrCodeDataUrl) => {
   pdf.setLineWidth(0.01);
   pdf.rect(x, y, labelWidth, labelHeight);
 
-  // Tote Number (top-left, large)
+  // Tote ID (top-left, large)
   pdf.setFont('helvetica', 'bold');
   pdf.setFontSize(32);
   pdf.setTextColor(45, 106, 79);
-  pdf.text(`#${tote.toteNumber}`, x + 0.15, y + 0.4);
-
-  // Tote Name (if available)
-  if (tote.name) {
-    pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(14);
-    pdf.setTextColor(60, 60, 60);
-    const name = tote.name.length > 20 ? tote.name.substring(0, 17) + '...' : tote.name;
-    pdf.text(name, x + 0.15, y + 0.7);
-  }
+  pdf.text(`#${tote.id}`, x + 0.15, y + 0.4);
 
   // Location (if available)
   if (tote.locationName) {
@@ -92,7 +83,7 @@ const drawLabel = (pdf, tote, col, row, qrCodeDataUrl) => {
 
 /**
  * Generate a printable label PDF for a single tote (full page, single label)
- * @param {Object} tote - Tote object with id, toteNumber, name, locationName, description, color
+ * @param {Object} tote - Tote object with id, locationName, description, color, tags
  */
 export const generateToteLabel = async (tote) => {
   try {
@@ -129,7 +120,7 @@ export const generateToteLabel = async (tote) => {
     // (Note: For simplicity, we'll just use the standard grid position)
     // If you want a single centered label, use the single-label generator
 
-    const fileName = `tote-${tote.toteNumber || tote.id}-label.pdf`;
+    const fileName = `tote-${tote.id}-label.pdf`;
     pdf.save(fileName);
 
     return { success: true };
