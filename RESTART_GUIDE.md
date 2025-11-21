@@ -4,16 +4,24 @@ Quick reference for restarting your ToteMaster development servers.
 
 ## Windows
 
-Simply double-click `restart.ps1` or run in PowerShell:
+### Option 1: Double-click (Easiest)
+Simply double-click **`restart.bat`** in File Explorer
+
+### Option 2: Run from PowerShell
+Open PowerShell in the ToteMaster directory and run:
 
 ```powershell
 .\restart.ps1
 ```
 
-This will:
+### Option 3: Right-click context menu
+Right-click `restart.ps1` → **Run with PowerShell**
+
+All options will:
 - Stop any processes on ports 3000 (backend) and 5173 (frontend)
 - Start backend server in a new PowerShell window
 - Start frontend server in a new PowerShell window
+- Keep the main window open so you can see the status
 
 ## Mac/Linux
 
