@@ -19,7 +19,7 @@ export default function ToteDetail() {
   const queryClient = useQueryClient();
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isTagsOpen, setIsTagsOpen] = useState(false);
-  const [editForm, setEditForm] = useState({ name: '', locationId: '', description: '', color: '' });
+  const [editForm, setEditForm] = useState({ locationId: '', description: '', color: '', tags: [] });
   const [selectedTags, setSelectedTags] = useState([]);
 
   const { data: totes = [] } = useQuery({
@@ -71,10 +71,10 @@ export default function ToteDetail() {
   const handleEdit = () => {
     if (tote) {
       setEditForm({
-        name: tote.name || '',
         locationId: tote.locationId || '',
         description: tote.description || '',
         color: tote.color || '',
+        tags: tote.tags || [],
       });
       setIsEditOpen(true);
     }
@@ -123,7 +123,7 @@ export default function ToteDetail() {
   };
 
   const handleDelete = async () => {
-    if (window.confirm(`Are you sure you want to delete "${tote?.name}"? This will not delete the items inside.`)) {
+    if (window.confirm(`Are you sure you want to delete Tote #${tote?.id}? This will not delete the items inside.`)) {
       try {
         await deleteMutation.mutateAsync(id);
       } catch (err) {
@@ -170,12 +170,6 @@ export default function ToteDetail() {
         <div className="flex items-start justify-between">
           <div>
             <div className="flex items-center gap-3 mb-2">
-              <div className="flex items-center gap-2">
-                <Hash className="h-6 w-6 text-muted-foreground" />
-                <span className="text-2xl font-bold text-muted-foreground">
-                  {tote.toteNumber}
-                </span>
-              </div>
               {tote.color && (
                 <div
                   className="w-8 h-8 rounded-full border-2 border-gray-300"
@@ -184,7 +178,7 @@ export default function ToteDetail() {
                 />
               )}
             </div>
-            <h1 className="text-4xl font-bold text-primary mb-2">{tote.name || `Tote #${tote.toteNumber}`}</h1>
+            <h1 className="text-4xl font-bold text-primary mb-2">Tote #{tote.id}</h1>
             <div className="flex items-center gap-4 text-muted-foreground">
               {location && (
                 <div className="flex items-center gap-1">
@@ -374,17 +368,9 @@ export default function ToteDetail() {
         <DialogContent onClose={() => setIsEditOpen(false)}>
           <form onSubmit={handleSave}>
             <DialogHeader>
-              <DialogTitle>Edit Tote</DialogTitle>
+              <DialogTitle>Edit Tote #{tote?.id}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Name (Optional)</label>
-                <Input
-                  value={editForm.name}
-                  onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                  placeholder={`Tote #${tote?.toteNumber}`}
-                />
-              </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Location</label>
                 <Select

@@ -35,10 +35,10 @@ export default function TotesPage() {
   const [globalFilter, setGlobalFilter] = useState('');
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [createForm, setCreateForm] = useState({
-    name: '',
     locationId: '',
     description: '',
     color: '',
+    tags: [],
   });
   const [newLocationMode, setNewLocationMode] = useState(false);
   const [newLocation, setNewLocation] = useState({
@@ -81,7 +81,7 @@ export default function TotesPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['totes'] });
       setIsCreateOpen(false);
-      setCreateForm({ name: '', locationId: '', description: '', color: '' });
+      setCreateForm({ locationId: '', description: '', color: '', tags: [] });
       setNewLocationMode(false);
       setNewLocation({ name: '', room: '', position: '', specificReference: '' });
       toast.success('Tote created successfully');
@@ -109,8 +109,8 @@ export default function TotesPage() {
     },
   });
 
-  const handleDelete = async (toteId, toteNumber) => {
-    if (window.confirm(`Are you sure you want to delete Tote #${toteNumber}?`)) {
+  const handleDelete = async (toteId) => {
+    if (window.confirm(`Are you sure you want to delete Tote #${toteId}?`)) {
       deleteMutation.mutate(toteId);
     }
   };
@@ -144,7 +144,7 @@ export default function TotesPage() {
   const columns = useMemo(
     () => [
       {
-        accessorKey: 'toteNumber',
+        accessorKey: 'id',
         header: ({ column }) => {
           return (
             <Button
@@ -158,25 +158,7 @@ export default function TotesPage() {
           );
         },
         cell: ({ row }) => (
-          <div className="font-bold text-primary">#{row.getValue('toteNumber')}</div>
-        ),
-      },
-      {
-        accessorKey: 'name',
-        header: ({ column }) => {
-          return (
-            <Button
-              variant="ghost"
-              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-              className="hover:bg-accent"
-            >
-              Name
-              <ArrowUpDown className="ml-2 h-4 w-4" />
-            </Button>
-          );
-        },
-        cell: ({ row }) => (
-          <div className="font-medium">{row.getValue('name') || <span className="text-muted-foreground italic">Unnamed</span>}</div>
+          <div className="font-bold text-primary">#{row.getValue('id')}</div>
         ),
       },
       {
@@ -238,7 +220,7 @@ export default function TotesPage() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => handleDelete(tote.id, tote.toteNumber)}
+                onClick={() => handleDelete(tote.id)}
                 className="text-destructive hover:text-destructive"
               >
                 <Trash2 className="h-4 w-4" />
@@ -290,7 +272,7 @@ export default function TotesPage() {
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search totes by ID, name, or location..."
+                placeholder="Search totes by ID, description, or location..."
                 value={globalFilter ?? ''}
                 onChange={(e) => setGlobalFilter(e.target.value)}
                 className="pl-9"
@@ -404,16 +386,8 @@ export default function TotesPage() {
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium">
-                  Name <span className="text-muted-foreground">(optional)</span>
-                </label>
-                <Input
-                  value={createForm.name}
-                  onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
-                  placeholder="e.g., Holiday Decorations (optional)"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Tote will be automatically assigned a sequential ID number
+                <p className="text-sm text-muted-foreground">
+                  Your tote will be automatically assigned a sequential ID number
                 </p>
               </div>
 

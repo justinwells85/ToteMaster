@@ -101,7 +101,7 @@ export default function ItemsPage() {
 
   const getToteName = (toteId) => {
     const tote = totes.find((t) => t.id === toteId);
-    return tote ? tote.name : 'No tote';
+    return tote ? `Tote #${tote.id}` : 'No tote';
   };
 
   const columns = useMemo(
@@ -173,7 +173,7 @@ export default function ItemsPage() {
               <option value="">No tote</option>
               {totes.map((tote) => (
                 <option key={tote.id} value={tote.id}>
-                  {tote.name}
+                  Tote #{tote.id}
                 </option>
               ))}
             </Select>
@@ -412,7 +412,7 @@ export default function ItemsPage() {
                   <option value="">No tote</option>
                   {totes.map((tote) => (
                     <option key={tote.id} value={tote.id}>
-                      {tote.name}
+                      Tote #{tote.id}
                     </option>
                   ))}
                 </Select>

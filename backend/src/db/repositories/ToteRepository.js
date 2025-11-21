@@ -1,5 +1,4 @@
 import db from '../index.js';
-import { nanoid } from 'nanoid';
 
 /**
  * Tote Repository - Database operations for totes
@@ -58,21 +57,18 @@ class ToteRepository {
   async create(toteData) {
     const client = await db.getClient();
     try {
-      const id = toteData.id || `tote-${nanoid(10)}`;
       const now = new Date().toISOString();
 
-      // Get next tote number from sequence
-      const seqResult = await client.query(`SELECT nextval('tote_number_seq') as tote_number`);
-      const toteNumber = seqResult.rows[0].tote_number;
+      // Get next tote number from sequence - this will be the primary key
+      const seqResult = await client.query(`SELECT nextval('tote_number_seq') as id`);
+      const id = seqResult.rows[0].id;
 
       const result = await client.query(
-        `INSERT INTO totes (id, tote_number, name, location, location_id, description, color, photos, user_id, created_at, updated_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        `INSERT INTO totes (id, location, location_id, description, color, photos, user_id, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
          RETURNING *`,
         [
           id,
-          toteNumber,
-          toteData.name || null,
           toteData.location || null,
           toteData.locationId || null,
           toteData.description || null,
@@ -83,6 +79,13 @@ class ToteRepository {
           toteData.updatedAt || now,
         ]
       );
+
+      // Handle tags if provided
+      if (toteData.tags && toteData.tags.length > 0) {
+        // Note: Tags will need to be handled via tag junction table
+        // For now, we'll return the tote without tags
+        // Tags should be added in a separate operation
+      }
 
       return this.mapToCamelCase(result.rows[0]);
     } finally {
@@ -103,10 +106,6 @@ class ToteRepository {
     let paramCount = 1;
 
     // Build dynamic UPDATE query
-    if (updates.name !== undefined) {
-      fields.push(`name = $${paramCount++}`);
-      values.push(updates.name);
-    }
     if (updates.location !== undefined) {
       fields.push(`location = $${paramCount++}`);
       values.push(updates.location);
@@ -229,8 +228,6 @@ class ToteRepository {
   mapToCamelCase(row) {
     return {
       id: row.id,
-      toteNumber: row.tote_number,
-      name: row.name,
       location: row.location,
       locationId: row.location_id,
       description: row.description,

@@ -1,5 +1,4 @@
 import db from '../index.js';
-import { nanoid } from 'nanoid';
 
 /**
  * Item Repository - Database operations for items
@@ -179,30 +178,38 @@ class ItemRepository {
    * @returns {Promise<Object>} - Created item
    */
   async create(itemData) {
-    const id = itemData.id || `item-${nanoid(10)}`;
-    const now = new Date().toISOString();
+    const client = await db.getClient();
+    try {
+      const now = new Date().toISOString();
 
-    const result = await db.query(
-      `INSERT INTO items (id, name, description, category, tote_id, quantity, condition, tags, photos, user_id, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-       RETURNING *`,
-      [
-        id,
-        itemData.name,
-        itemData.description || null,
-        itemData.category || null,
-        itemData.toteId || null,
-        itemData.quantity || 1,
-        itemData.condition || 'good',
-        itemData.tags || [],
-        itemData.photos || [],
-        itemData.userId || null,
-        itemData.createdAt || now,
-        itemData.updatedAt || now,
-      ]
-    );
+      // Get next item number from sequence - this will be the primary key
+      const seqResult = await client.query(`SELECT nextval('item_number_seq') as id`);
+      const id = seqResult.rows[0].id;
 
-    return this.mapToCamelCase(result.rows[0]);
+      const result = await client.query(
+        `INSERT INTO items (id, name, description, category, tote_id, quantity, condition, tags, photos, user_id, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+         RETURNING *`,
+        [
+          id,
+          itemData.name,
+          itemData.description || null,
+          itemData.category || null,
+          itemData.toteId || null,
+          itemData.quantity || 1,
+          itemData.condition || 'good',
+          itemData.tags || [],
+          itemData.photos || [],
+          itemData.userId || null,
+          itemData.createdAt || now,
+          itemData.updatedAt || now,
+        ]
+      );
+
+      return this.mapToCamelCase(result.rows[0]);
+    } finally {
+      client.release();
+    }
   }
 
   /**

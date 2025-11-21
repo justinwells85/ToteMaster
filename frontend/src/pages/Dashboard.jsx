@@ -45,10 +45,9 @@ export default function Dashboard() {
 
     const matchedTotes = totes.filter(
       (tote) =>
-        tote.name?.toLowerCase().includes(query) ||
         tote.location?.toLowerCase().includes(query) ||
         tote.description?.toLowerCase().includes(query) ||
-        tote.toteNumber?.toString().includes(query)
+        tote.id?.toString().includes(query)
     );
 
     const matchedItems = items.filter(
@@ -175,7 +174,7 @@ export default function Dashboard() {
                         className="p-3 rounded-md hover:bg-accent cursor-pointer transition-colors border border-border"
                       >
                         <p className="font-medium">
-                          #{tote.toteNumber} {tote.name && `- ${tote.name}`}
+                          Tote #{tote.id}
                         </p>
                         <p className="text-xs text-muted-foreground">
                           {tote.location || 'No location'}
