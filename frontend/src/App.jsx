@@ -8,6 +8,8 @@ import TotesPage from './pages/TotesPage';
 import ToteDetail from './pages/ToteDetail';
 import ItemsPage from './pages/ItemsPage';
 import ItemDetail from './pages/ItemDetail';
+import TagsPage from './pages/TagsPage';
+import LocationsPage from './pages/LocationsPage';
 import Login from './pages/Login';
 import Register from './pages/Register';
 
@@ -79,6 +81,26 @@ function App() {
                 <ProtectedRoute>
                   <MainLayout>
                     <ItemDetail />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/tags"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <TagsPage />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/locations"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <LocationsPage />
                   </MainLayout>
                 </ProtectedRoute>
               }

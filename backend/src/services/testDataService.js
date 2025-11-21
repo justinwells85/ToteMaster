@@ -61,7 +61,7 @@ const SAMPLE_DESCRIPTIONS = [
 
 /**
  * Generate test data for a user
- * Creates 10 totes with 2-8 random items each
+ * Creates 10 totes with 1-4 random items each
  */
 export const generateTestData = async (userId) => {
   const client = await db.getClient();
@@ -125,10 +125,10 @@ export const generateTestData = async (userId) => {
     }
     logger.info(`Created ${createdTotes.length} totes`);
 
-    // Create 2-8 items per tote
+    // Create 1-4 items per tote
     let totalItems = 0;
     for (const tote of createdTotes) {
-      const itemCount = Math.floor(Math.random() * 7) + 2; // 2-8 items
+      const itemCount = Math.floor(Math.random() * 4) + 1; // 1-4 items
 
       for (let i = 0; i < itemCount; i++) {
         const randomItem = SAMPLE_ITEMS[Math.floor(Math.random() * SAMPLE_ITEMS.length)];
