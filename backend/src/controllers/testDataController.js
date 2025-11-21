@@ -3,7 +3,7 @@ import logger from '../utils/logger.js';
 
 /**
  * Generate test data for the authenticated user
- * Creates 10 totes with 2-8 random items each
+ * Creates 10 totes with 1-4 random items each
  */
 export const generateTestData = async (req, res) => {
   try {

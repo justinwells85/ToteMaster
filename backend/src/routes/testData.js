@@ -9,7 +9,7 @@ router.use(requireAuth);
 
 /**
  * POST /api/test-data/generate
- * Generate test data (10 totes with 2-8 items each)
+ * Generate test data (10 totes with 1-4 items each)
  */
 router.post('/generate', testDataController.generateTestData);
 
