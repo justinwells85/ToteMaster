@@ -9,7 +9,7 @@ describe('Item Model Validation', () => {
         name: 'Test Item',
         description: 'A test description',
         category: 'Electronics',
-        toteId: 'tote-123',
+        toteId: 123, // Changed to integer
         quantity: 5,
         condition: 'good',
         tags: ['test', 'electronics']
@@ -164,10 +164,12 @@ describe('Tote Model Validation', () => {
   describe('validateTote', () => {
     it('should validate a complete valid tote', () => {
       const validTote = {
-        name: 'Test Tote',
         location: 'Garage',
+        locationId: 'loc-123',
         description: 'Storage tote in garage',
-        color: 'blue'
+        color: 'blue',
+        photos: ['photo1.jpg', 'photo2.jpg'],
+        tags: ['storage', 'garage']
       };
 
       const result = validateTote(validTote);
@@ -175,51 +177,26 @@ describe('Tote Model Validation', () => {
       expect(result.errors).toEqual([]);
     });
 
-    it('should reject tote without name', () => {
-      const invalidTote = {
-        location: 'Garage',
-        description: 'Missing name'
-      };
+    it('should accept tote with no fields (all optional)', () => {
+      const emptyTote = {};
 
-      const result = validateTote(invalidTote);
-      expect(result.valid).toBe(false);
-      expect(result.errors).toContain('name is required');
-    });
-
-    it('should reject tote with empty name', () => {
-      const invalidTote = {
-        name: '',
-        location: 'Garage'
-      };
-
-      const result = validateTote(invalidTote);
-      expect(result.valid).toBe(false);
-      expect(result.errors.some(e => e.includes('name'))).toBe(true);
-    });
-
-    it('should reject tote with name too long', () => {
-      const invalidTote = {
-        name: 'A'.repeat(101),
-        location: 'Garage'
-      };
-
-      const result = validateTote(invalidTote);
-      expect(result.valid).toBe(false);
-      expect(result.errors.some(e => e.includes('name') && e.includes('100'))).toBe(true);
+      const result = validateTote(emptyTote);
+      expect(result.valid).toBe(true);
+      expect(result.errors).toEqual([]);
     });
 
     it('should accept tote with minimal fields', () => {
       const minimalTote = {
-        name: 'Minimal Tote'
+        description: 'A minimal tote'
       };
 
       const result = validateTote(minimalTote);
       expect(result.valid).toBe(true);
     });
 
-    it('should trim whitespace from name', () => {
+    it('should trim whitespace from description', () => {
       const tote = {
-        name: '  Test Tote  ',
+        description: '  Test Description  ',
         location: 'Garage'
       };
 
@@ -238,13 +215,62 @@ describe('Tote Model Validation', () => {
 
     it('should validate optional fields', () => {
       const tote = {
-        name: 'Test Tote',
         location: 'Garage',
         description: 'A test description',
-        color: 'red'
+        color: 'red',
+        photos: [],
+        tags: []
       };
 
       const result = validateTote(tote);
+      expect(result.valid).toBe(true);
+    });
+
+    it('should reject tote with description too long', () => {
+      const invalidTote = {
+        description: 'A'.repeat(1001)
+      };
+
+      const result = validateTote(invalidTote);
+      expect(result.valid).toBe(false);
+      expect(result.errors.some(e => e.includes('description') && e.includes('1000'))).toBe(true);
+    });
+
+    it('should validate photos as array', () => {
+      const invalidTote = {
+        photos: 'not-an-array'
+      };
+
+      const result = validateTote(invalidTote);
+      expect(result.valid).toBe(false);
+      expect(result.errors.some(e => e.includes('photos'))).toBe(true);
+    });
+
+    it('should validate tags as array', () => {
+      const invalidTote = {
+        tags: 'not-an-array'
+      };
+
+      const result = validateTote(invalidTote);
+      expect(result.valid).toBe(false);
+      expect(result.errors.some(e => e.includes('tags'))).toBe(true);
+    });
+
+    it('should accept valid photos array', () => {
+      const validTote = {
+        photos: ['photo1.jpg', 'photo2.jpg']
+      };
+
+      const result = validateTote(validTote);
+      expect(result.valid).toBe(true);
+    });
+
+    it('should accept valid tags array', () => {
+      const validTote = {
+        tags: ['tag1', 'tag2', 'tag3']
+      };
+
+      const result = validateTote(validTote);
       expect(result.valid).toBe(true);
     });
   });
