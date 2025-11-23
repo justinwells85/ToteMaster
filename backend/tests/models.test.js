@@ -9,7 +9,7 @@ describe('Item Model Validation', () => {
         name: 'Test Item',
         description: 'A test description',
         category: 'Electronics',
-        toteId: 'tote-123',
+        toteId: 123,
         quantity: 5,
         condition: 'good',
         tags: ['test', 'electronics']
@@ -164,10 +164,10 @@ describe('Tote Model Validation', () => {
   describe('validateTote', () => {
     it('should validate a complete valid tote', () => {
       const validTote = {
-        name: 'Test Tote',
         location: 'Garage',
         description: 'Storage tote in garage',
-        color: 'blue'
+        color: 'blue',
+        locationId: 1
       };
 
       const result = validateTote(validTote);
@@ -175,52 +175,35 @@ describe('Tote Model Validation', () => {
       expect(result.errors).toEqual([]);
     });
 
-    it('should reject tote without name', () => {
-      const invalidTote = {
-        location: 'Garage',
-        description: 'Missing name'
-      };
-
-      const result = validateTote(invalidTote);
-      expect(result.valid).toBe(false);
-      expect(result.errors).toContain('name is required');
-    });
-
-    it('should reject tote with empty name', () => {
-      const invalidTote = {
-        name: '',
-        location: 'Garage'
-      };
-
-      const result = validateTote(invalidTote);
-      expect(result.valid).toBe(false);
-      expect(result.errors.some(e => e.includes('name'))).toBe(true);
-    });
-
-    it('should reject tote with name too long', () => {
-      const invalidTote = {
-        name: 'A'.repeat(101),
-        location: 'Garage'
-      };
-
-      const result = validateTote(invalidTote);
-      expect(result.valid).toBe(false);
-      expect(result.errors.some(e => e.includes('name') && e.includes('100'))).toBe(true);
-    });
-
     it('should accept tote with minimal fields', () => {
       const minimalTote = {
-        name: 'Minimal Tote'
+        location: 'Garage'
       };
 
       const result = validateTote(minimalTote);
       expect(result.valid).toBe(true);
     });
 
-    it('should trim whitespace from name', () => {
+    it('should accept tote with empty object (all fields optional)', () => {
+      const emptyTote = {};
+
+      const result = validateTote(emptyTote);
+      expect(result.valid).toBe(true);
+    });
+
+    it('should reject tote with location too long', () => {
+      const invalidTote = {
+        location: 'A'.repeat(201)
+      };
+
+      const result = validateTote(invalidTote);
+      expect(result.valid).toBe(false);
+      expect(result.errors.some(e => e.includes('location') && e.includes('200'))).toBe(true);
+    });
+
+    it('should trim whitespace from location', () => {
       const tote = {
-        name: '  Test Tote  ',
-        location: 'Garage'
+        location: '  Test Location  '
       };
 
       const result = validateTote(tote);
@@ -238,14 +221,26 @@ describe('Tote Model Validation', () => {
 
     it('should validate optional fields', () => {
       const tote = {
-        name: 'Test Tote',
         location: 'Garage',
         description: 'A test description',
-        color: 'red'
+        color: 'red',
+        photos: ['photo1.jpg', 'photo2.jpg'],
+        tags: ['storage', 'garage']
       };
 
       const result = validateTote(tote);
       expect(result.valid).toBe(true);
+    });
+
+    it('should reject invalid locationId type', () => {
+      const invalidTote = {
+        location: 'Garage',
+        locationId: 'not-a-number'
+      };
+
+      const result = validateTote(invalidTote);
+      expect(result.valid).toBe(false);
+      expect(result.errors.some(e => e.includes('locationId'))).toBe(true);
     });
   });
 });
