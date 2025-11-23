@@ -4,6 +4,7 @@
  */
 
 import LocationRepository from '../db/repositories/LocationRepository.js';
+import logger from '../utils/logger.js';
 
 /**
  * Get all locations for a user
@@ -11,7 +12,15 @@ import LocationRepository from '../db/repositories/LocationRepository.js';
  * @returns {Promise<Array>}
  */
 export const getAllLocations = async (userId) => {
-  return await LocationRepository.findAll(userId);
+  logger.debug('getAllLocations called', { userId });
+  try {
+    const locations = await LocationRepository.findAll(userId);
+    logger.debug('Locations retrieved', { userId, count: locations.length });
+    return locations;
+  } catch (error) {
+    logger.logError('Error in getAllLocations', error, { userId });
+    throw error;
+  }
 };
 
 /**
@@ -21,7 +30,17 @@ export const getAllLocations = async (userId) => {
  * @returns {Promise<Object|null>}
  */
 export const getLocationById = async (id, userId) => {
-  return await LocationRepository.findById(id, userId);
+  logger.debug('getLocationById called', { locationId: id, userId });
+  try {
+    const location = await LocationRepository.findById(id, userId);
+    if (!location) {
+      logger.debug('Location not found', { locationId: id, userId });
+    }
+    return location;
+  } catch (error) {
+    logger.logError('Error in getLocationById', error, { locationId: id, userId });
+    throw error;
+  }
 };
 
 /**
@@ -31,7 +50,15 @@ export const getLocationById = async (id, userId) => {
  * @returns {Promise<Object>}
  */
 export const createLocation = async (locationData, userId) => {
-  return await LocationRepository.create(locationData, userId);
+  logger.info('Creating new location', { userId, name: locationData.name });
+  try {
+    const location = await LocationRepository.create(locationData, userId);
+    logger.info('Location created successfully', { locationId: location.id, userId });
+    return location;
+  } catch (error) {
+    logger.logError('Error in createLocation', error, { userId, locationData });
+    throw error;
+  }
 };
 
 /**
@@ -42,7 +69,19 @@ export const createLocation = async (locationData, userId) => {
  * @returns {Promise<Object|null>}
  */
 export const updateLocation = async (id, locationData, userId) => {
-  return await LocationRepository.update(id, locationData, userId);
+  logger.info('Updating location', { locationId: id, userId });
+  try {
+    const location = await LocationRepository.update(id, locationData, userId);
+    if (location) {
+      logger.info('Location updated successfully', { locationId: id, userId });
+    } else {
+      logger.warn('Location not found for update', { locationId: id, userId });
+    }
+    return location;
+  } catch (error) {
+    logger.logError('Error in updateLocation', error, { locationId: id, userId });
+    throw error;
+  }
 };
 
 /**
@@ -52,5 +91,17 @@ export const updateLocation = async (id, locationData, userId) => {
  * @returns {Promise<boolean>}
  */
 export const deleteLocation = async (id, userId) => {
-  return await LocationRepository.delete(id, userId);
+  logger.info('Deleting location', { locationId: id, userId });
+  try {
+    const deleted = await LocationRepository.delete(id, userId);
+    if (deleted) {
+      logger.info('Location deleted successfully', { locationId: id, userId });
+    } else {
+      logger.warn('Location not found for deletion', { locationId: id, userId });
+    }
+    return deleted;
+  } catch (error) {
+    logger.logError('Error in deleteLocation', error, { locationId: id, userId });
+    throw error;
+  }
 };

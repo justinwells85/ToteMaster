@@ -12,9 +12,10 @@ import logger from '../utils/logger.js';
 export const getAllLocations = async (req, res) => {
   try {
     const locations = await locationsService.getAllLocations(req.user.userId);
+    logger.debug('getAllLocations controller completed', { userId: req.user.userId, count: locations.length });
     res.json(locations);
   } catch (error) {
-    logger.error('Error in getAllLocations:', error);
+    logger.logError('Error in getAllLocations controller', error, { userId: req.user.userId });
     res.status(500).json({ error: error.message });
   }
 };
@@ -28,12 +29,13 @@ export const getLocationById = async (req, res) => {
     const location = await locationsService.getLocationById(id, req.user.userId);
 
     if (!location) {
+      logger.debug('Location not found in controller', { locationId: id, userId: req.user.userId });
       return res.status(404).json({ error: 'Location not found' });
     }
 
     res.json(location);
   } catch (error) {
-    logger.error('Error in getLocationById:', error);
+    logger.logError('Error in getLocationById controller', error, { locationId: req.params.id, userId: req.user.userId });
     res.status(500).json({ error: error.message });
   }
 };
@@ -44,9 +46,10 @@ export const getLocationById = async (req, res) => {
 export const createLocation = async (req, res) => {
   try {
     const location = await locationsService.createLocation(req.body, req.user.userId);
+    logger.info('Location created via controller', { locationId: location.id, userId: req.user.userId });
     res.status(201).json(location);
   } catch (error) {
-    logger.error('Error in createLocation:', error);
+    logger.logError('Error in createLocation controller', error, { userId: req.user.userId });
     res.status(400).json({ error: error.message });
   }
 };
@@ -60,12 +63,14 @@ export const updateLocation = async (req, res) => {
     const location = await locationsService.updateLocation(id, req.body, req.user.userId);
 
     if (!location) {
+      logger.debug('Location not found for update in controller', { locationId: id, userId: req.user.userId });
       return res.status(404).json({ error: 'Location not found' });
     }
 
+    logger.info('Location updated via controller', { locationId: id, userId: req.user.userId });
     res.json(location);
   } catch (error) {
-    logger.error('Error in updateLocation:', error);
+    logger.logError('Error in updateLocation controller', error, { locationId: req.params.id, userId: req.user.userId });
     res.status(400).json({ error: error.message });
   }
 };
@@ -79,12 +84,14 @@ export const deleteLocation = async (req, res) => {
     const deleted = await locationsService.deleteLocation(id, req.user.userId);
 
     if (!deleted) {
+      logger.debug('Location not found for deletion in controller', { locationId: id, userId: req.user.userId });
       return res.status(404).json({ error: 'Location not found' });
     }
 
+    logger.info('Location deleted via controller', { locationId: id, userId: req.user.userId });
     res.status(204).send();
   } catch (error) {
-    logger.error('Error in deleteLocation:', error);
+    logger.logError('Error in deleteLocation controller', error, { locationId: req.params.id, userId: req.user.userId });
     res.status(500).json({ error: error.message });
   }
 };

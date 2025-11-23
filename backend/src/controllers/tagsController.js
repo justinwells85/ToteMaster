@@ -12,9 +12,10 @@ import logger from '../utils/logger.js';
 export const getAllTags = async (req, res) => {
   try {
     const tags = await tagsService.getAllTags(req.user.userId);
+    logger.debug('getAllTags controller completed', { userId: req.user.userId, count: tags.length });
     res.json(tags);
   } catch (error) {
-    logger.error('Error in getAllTags:', error);
+    logger.logError('Error in getAllTags controller', error, { userId: req.user.userId });
     res.status(500).json({ error: error.message });
   }
 };
@@ -28,12 +29,13 @@ export const getTagById = async (req, res) => {
     const tag = await tagsService.getTagById(id, req.user.userId);
 
     if (!tag) {
+      logger.debug('Tag not found in controller', { tagId: id, userId: req.user.userId });
       return res.status(404).json({ error: 'Tag not found' });
     }
 
     res.json(tag);
   } catch (error) {
-    logger.error('Error in getTagById:', error);
+    logger.logError('Error in getTagById controller', error, { tagId: req.params.id, userId: req.user.userId });
     res.status(500).json({ error: error.message });
   }
 };
@@ -44,9 +46,10 @@ export const getTagById = async (req, res) => {
 export const createTag = async (req, res) => {
   try {
     const tag = await tagsService.createTag(req.body, req.user.userId);
+    logger.info('Tag created via controller', { tagId: tag.id, userId: req.user.userId });
     res.status(201).json(tag);
   } catch (error) {
-    logger.error('Error in createTag:', error);
+    logger.logError('Error in createTag controller', error, { userId: req.user.userId });
     res.status(400).json({ error: error.message });
   }
 };
@@ -60,12 +63,14 @@ export const updateTag = async (req, res) => {
     const tag = await tagsService.updateTag(id, req.body, req.user.userId);
 
     if (!tag) {
+      logger.debug('Tag not found for update in controller', { tagId: id, userId: req.user.userId });
       return res.status(404).json({ error: 'Tag not found' });
     }
 
+    logger.info('Tag updated via controller', { tagId: id, userId: req.user.userId });
     res.json(tag);
   } catch (error) {
-    logger.error('Error in updateTag:', error);
+    logger.logError('Error in updateTag controller', error, { tagId: req.params.id, userId: req.user.userId });
     res.status(400).json({ error: error.message });
   }
 };
@@ -79,12 +84,14 @@ export const deleteTag = async (req, res) => {
     const deleted = await tagsService.deleteTag(id, req.user.userId);
 
     if (!deleted) {
+      logger.debug('Tag not found for deletion in controller', { tagId: id, userId: req.user.userId });
       return res.status(404).json({ error: 'Tag not found' });
     }
 
+    logger.info('Tag deleted via controller', { tagId: id, userId: req.user.userId });
     res.status(204).send();
   } catch (error) {
-    logger.error('Error in deleteTag:', error);
+    logger.logError('Error in deleteTag controller', error, { tagId: req.params.id, userId: req.user.userId });
     res.status(500).json({ error: error.message });
   }
 };
@@ -96,9 +103,10 @@ export const addTagToTote = async (req, res) => {
   try {
     const { toteId, tagId } = req.body;
     await tagsService.addTagToTote(toteId, tagId);
+    logger.info('Tag added to tote via controller', { toteId, tagId, userId: req.user.userId });
     res.status(200).json({ success: true });
   } catch (error) {
-    logger.error('Error in addTagToTote:', error);
+    logger.logError('Error in addTagToTote controller', error, { toteId: req.body.toteId, tagId: req.body.tagId });
     res.status(400).json({ error: error.message });
   }
 };
@@ -110,9 +118,10 @@ export const removeTagFromTote = async (req, res) => {
   try {
     const { toteId, tagId } = req.body;
     await tagsService.removeTagFromTote(toteId, tagId);
+    logger.info('Tag removed from tote via controller', { toteId, tagId, userId: req.user.userId });
     res.status(200).json({ success: true });
   } catch (error) {
-    logger.error('Error in removeTagFromTote:', error);
+    logger.logError('Error in removeTagFromTote controller', error, { toteId: req.body.toteId, tagId: req.body.tagId });
     res.status(400).json({ error: error.message });
   }
 };
@@ -124,9 +133,10 @@ export const addTagToItem = async (req, res) => {
   try {
     const { itemId, tagId } = req.body;
     await tagsService.addTagToItem(itemId, tagId);
+    logger.info('Tag added to item via controller', { itemId, tagId, userId: req.user.userId });
     res.status(200).json({ success: true });
   } catch (error) {
-    logger.error('Error in addTagToItem:', error);
+    logger.logError('Error in addTagToItem controller', error, { itemId: req.body.itemId, tagId: req.body.tagId });
     res.status(400).json({ error: error.message });
   }
 };
@@ -138,9 +148,10 @@ export const removeTagFromItem = async (req, res) => {
   try {
     const { itemId, tagId } = req.body;
     await tagsService.removeTagFromItem(itemId, tagId);
+    logger.info('Tag removed from item via controller', { itemId, tagId, userId: req.user.userId });
     res.status(200).json({ success: true });
   } catch (error) {
-    logger.error('Error in removeTagFromItem:', error);
+    logger.logError('Error in removeTagFromItem controller', error, { itemId: req.body.itemId, tagId: req.body.tagId });
     res.status(400).json({ error: error.message });
   }
 };
