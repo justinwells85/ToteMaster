@@ -375,7 +375,7 @@ describe('Tote Model Validation', () => {
     it('should validate a complete valid tote', () => {
       const validTote = {
         location: 'Garage',
-        locationId: 'loc-123',
+        locationId: 123,
         description: 'Storage tote in garage',
         color: 'blue',
         photos: ['photo1.jpg', 'photo2.jpg'],
@@ -400,9 +400,9 @@ describe('Tote Model Validation', () => {
         description: 'A minimal tote'
       };
 
-      const result = validateTote(invalidTote);
-      expect(result.valid).toBe(false);
-      expect(result.errors.some(e => e.includes('locationId') && e.includes('integer'))).toBe(true);
+      const result = validateTote(minimalTote);
+      expect(result.valid).toBe(true);
+      expect(result.errors).toEqual([]);
     });
 
     it('should reject tags array with too many items', () => {
