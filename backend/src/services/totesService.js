@@ -130,6 +130,10 @@ export const getToteItems = async (toteId, userId) => {
   logger.debug('Getting tote items', { toteId, userId });
   try {
     const items = await ToteRepository.getItemsInTote(toteId, userId);
+    if (items === null) {
+      logger.debug('Tote not found', { toteId, userId });
+      return null;
+    }
     logger.debug('Tote items retrieved', { toteId, userId, count: items.length });
     return items;
   } catch (error) {
