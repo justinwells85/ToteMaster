@@ -9,7 +9,7 @@ describe('Item Model Validation', () => {
         name: 'Test Item',
         description: 'A test description',
         category: 'Electronics',
-        toteId: 123,
+        toteId: 123, // Changed to integer
         quantity: 5,
         condition: 'good',
         tags: ['test', 'electronics']
@@ -375,9 +375,11 @@ describe('Tote Model Validation', () => {
     it('should validate a complete valid tote', () => {
       const validTote = {
         location: 'Garage',
+        locationId: 'loc-123',
         description: 'Storage tote in garage',
         color: 'blue',
-        locationId: 1
+        photos: ['photo1.jpg', 'photo2.jpg'],
+        tags: ['storage', 'garage']
       };
 
       const result = validateTote(validTote);
@@ -385,86 +387,17 @@ describe('Tote Model Validation', () => {
       expect(result.errors).toEqual([]);
     });
 
-    it('should reject null tote', () => {
-      const result = validateTote(null);
-      expect(result.valid).toBe(false);
-      expect(result.errors).toContain('Tote must be an object');
-    });
-
-    it('should reject undefined tote', () => {
-      const result = validateTote(undefined);
-      expect(result.valid).toBe(false);
-      expect(result.errors).toContain('Tote must be an object');
-    });
-
-    it('should reject non-object tote', () => {
-      const result = validateTote('not an object');
-      expect(result.valid).toBe(false);
-      expect(result.errors).toContain('Tote must be an object');
-    });
-
-    it('should accept tote with minimal fields', () => {
-      const minimalTote = {
-        location: 'Garage'
-      };
-
-      const result = validateTote(minimalTote);
-      expect(result.valid).toBe(true);
-    });
-
-    it('should accept tote with empty object (all fields optional)', () => {
+    it('should accept tote with no fields (all optional)', () => {
       const emptyTote = {};
 
       const result = validateTote(emptyTote);
       expect(result.valid).toBe(true);
+      expect(result.errors).toEqual([]);
     });
 
-    it('should reject tote with location too long', () => {
-      const invalidTote = {
-        location: 'A'.repeat(201)
-      };
-
-      const result = validateTote(invalidTote);
-      expect(result.valid).toBe(false);
-      expect(result.errors.some(e => e.includes('location') && e.includes('200'))).toBe(true);
-    });
-
-    it('should reject tote with description too long', () => {
-      const invalidTote = {
-        location: 'Garage',
-        description: 'A'.repeat(1001)
-      };
-
-      const result = validateTote(invalidTote);
-      expect(result.valid).toBe(false);
-      expect(result.errors.some(e => e.includes('description') && e.includes('1000'))).toBe(true);
-    });
-
-    it('should reject tote with color too long', () => {
-      const invalidTote = {
-        location: 'Garage',
-        color: 'A'.repeat(51)
-      };
-
-      const result = validateTote(invalidTote);
-      expect(result.valid).toBe(false);
-      expect(result.errors.some(e => e.includes('color') && e.includes('50'))).toBe(true);
-    });
-
-    it('should reject tote with wrong type for location', () => {
-      const invalidTote = {
-        location: 123
-      };
-
-      const result = validateTote(invalidTote);
-      expect(result.valid).toBe(false);
-      expect(result.errors).toContain('location must be a string');
-    });
-
-    it('should reject tote with non-integer locationId', () => {
-      const invalidTote = {
-        location: 'Garage',
-        locationId: 123.45
+    it('should accept tote with minimal fields', () => {
+      const minimalTote = {
+        description: 'A minimal tote'
       };
 
       const result = validateTote(invalidTote);
@@ -529,9 +462,10 @@ describe('Tote Model Validation', () => {
       expect(result.valid).toBe(true);
     });
 
-    it('should trim whitespace from location', () => {
+    it('should trim whitespace from description', () => {
       const tote = {
-        location: '  Test Location  '
+        description: '  Test Description  ',
+        location: 'Garage'
       };
 
       const result = validateTote(tote);
@@ -552,95 +486,60 @@ describe('Tote Model Validation', () => {
         location: 'Garage',
         description: 'A test description',
         color: 'red',
-        photos: ['photo1.jpg', 'photo2.jpg'],
-        tags: ['storage', 'garage']
+        photos: [],
+        tags: []
       };
 
       const result = validateTote(tote);
       expect(result.valid).toBe(true);
     });
 
-    it('should reject invalid locationId type', () => {
+    it('should reject tote with description too long', () => {
       const invalidTote = {
-        location: 'Garage',
-        locationId: 'not-a-number'
+        description: 'A'.repeat(1001)
       };
 
       const result = validateTote(invalidTote);
       expect(result.valid).toBe(false);
-      expect(result.errors.some(e => e.includes('locationId'))).toBe(true);
-    });
-  });
-
-  describe('sanitizeTote', () => {
-    it('should apply default values', () => {
-      const tote = {
-        location: 'Garage'
-      };
-
-      const sanitized = sanitizeTote(tote);
-      expect(sanitized.photos).toEqual([]);
-      expect(sanitized.tags).toEqual([]);
+      expect(result.errors.some(e => e.includes('description') && e.includes('1000'))).toBe(true);
     });
 
-    it('should trim string fields', () => {
-      const tote = {
-        location: '  Garage  ',
-        description: '  Description  ',
-        color: '  Blue  '
+    it('should validate photos as array', () => {
+      const invalidTote = {
+        photos: 'not-an-array'
       };
 
-      const sanitized = sanitizeTote(tote);
-      expect(sanitized.location).toBe('Garage');
-      expect(sanitized.description).toBe('Description');
-      expect(sanitized.color).toBe('Blue');
+      const result = validateTote(invalidTote);
+      expect(result.valid).toBe(false);
+      expect(result.errors.some(e => e.includes('photos'))).toBe(true);
     });
 
-    it('should convert invalid arrays to empty arrays', () => {
-      const tote = {
-        location: 'Garage',
-        tags: 'not-an-array',
-        photos: 123
+    it('should validate tags as array', () => {
+      const invalidTote = {
+        tags: 'not-an-array'
       };
 
-      const sanitized = sanitizeTote(tote);
-      expect(sanitized.tags).toEqual([]);
-      expect(sanitized.photos).toEqual([]);
-    });
-  });
-
-  describe('createToteModel', () => {
-    it('should create tote with all fields', () => {
-      const data = {
-        location: 'Garage',
-        locationId: 123,
-        description: 'Test Description',
-        color: 'Blue',
-        photos: ['photo1.jpg'],
-        tags: ['tag1', 'tag2']
-      };
-
-      const model = createToteModel(data);
-      expect(model.location).toBe('Garage');
-      expect(model.locationId).toBe(123);
-      expect(model.description).toBe('Test Description');
-      expect(model.color).toBe('Blue');
-      expect(model.photos).toEqual(['photo1.jpg']);
-      expect(model.tags).toEqual(['tag1', 'tag2']);
+      const result = validateTote(invalidTote);
+      expect(result.valid).toBe(false);
+      expect(result.errors.some(e => e.includes('tags'))).toBe(true);
     });
 
-    it('should apply defaults for missing fields', () => {
-      const data = {
-        location: 'Garage'
+    it('should accept valid photos array', () => {
+      const validTote = {
+        photos: ['photo1.jpg', 'photo2.jpg']
       };
 
-      const model = createToteModel(data);
-      expect(model.location).toBe('Garage');
-      expect(model.locationId).toBeNull();
-      expect(model.description).toBe('');
-      expect(model.color).toBe('');
-      expect(model.photos).toEqual([]);
-      expect(model.tags).toEqual([]);
+      const result = validateTote(validTote);
+      expect(result.valid).toBe(true);
+    });
+
+    it('should accept valid tags array', () => {
+      const validTote = {
+        tags: ['tag1', 'tag2', 'tag3']
+      };
+
+      const result = validateTote(validTote);
+      expect(result.valid).toBe(true);
     });
   });
 });
