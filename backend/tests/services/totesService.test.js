@@ -31,7 +31,7 @@ describe('Totes Service', () => {
       const userId = 1;
       const toteData = {
         location: 'Garage',
-        locationId: 'loc-123',
+        locationId: 123,
         description: 'Test Description',
         color: 'blue',
         photos: [],
