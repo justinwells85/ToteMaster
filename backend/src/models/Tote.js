@@ -11,8 +11,9 @@ export const ToteSchema = {
     trim: true,
   },
   locationId: {
-    type: 'string',
+    type: 'number',
     required: false,
+    integer: true,
   },
   description: {
     type: 'string',

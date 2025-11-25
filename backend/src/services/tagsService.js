@@ -4,6 +4,7 @@
  */
 
 import TagRepository from '../db/repositories/TagRepository.js';
+import logger from '../utils/logger.js';
 
 /**
  * Get all tags for a user
@@ -11,7 +12,15 @@ import TagRepository from '../db/repositories/TagRepository.js';
  * @returns {Promise<Array>}
  */
 export const getAllTags = async (userId) => {
-  return await TagRepository.findAll(userId);
+  logger.debug('getAllTags called', { userId });
+  try {
+    const tags = await TagRepository.findAll(userId);
+    logger.debug('Tags retrieved', { userId, count: tags.length });
+    return tags;
+  } catch (error) {
+    logger.logError('Error in getAllTags', error, { userId });
+    throw error;
+  }
 };
 
 /**
@@ -21,7 +30,13 @@ export const getAllTags = async (userId) => {
  * @returns {Promise<Object|null>}
  */
 export const getTagById = async (id, userId) => {
-  return await TagRepository.findById(id, userId);
+  logger.debug('getTagById called', { tagId: id, userId });
+  try {
+    return await TagRepository.findById(id, userId);
+  } catch (error) {
+    logger.logError('Error in getTagById', error, { tagId: id, userId });
+    throw error;
+  }
 };
 
 /**
@@ -31,7 +46,15 @@ export const getTagById = async (id, userId) => {
  * @returns {Promise<Object>}
  */
 export const createTag = async (tagData, userId) => {
-  return await TagRepository.create(tagData, userId);
+  logger.info('Creating new tag', { userId, name: tagData.name });
+  try {
+    const tag = await TagRepository.create(tagData, userId);
+    logger.info('Tag created successfully', { tagId: tag.id, userId });
+    return tag;
+  } catch (error) {
+    logger.logError('Error in createTag', error, { userId, tagData });
+    throw error;
+  }
 };
 
 /**
@@ -42,7 +65,17 @@ export const createTag = async (tagData, userId) => {
  * @returns {Promise<Object|null>}
  */
 export const updateTag = async (id, tagData, userId) => {
-  return await TagRepository.update(id, tagData, userId);
+  logger.info('Updating tag', { tagId: id, userId });
+  try {
+    const tag = await TagRepository.update(id, tagData, userId);
+    if (tag) {
+      logger.info('Tag updated successfully', { tagId: id, userId });
+    }
+    return tag;
+  } catch (error) {
+    logger.logError('Error in updateTag', error, { tagId: id, userId });
+    throw error;
+  }
 };
 
 /**
@@ -52,7 +85,17 @@ export const updateTag = async (id, tagData, userId) => {
  * @returns {Promise<boolean>}
  */
 export const deleteTag = async (id, userId) => {
-  return await TagRepository.delete(id, userId);
+  logger.info('Deleting tag', { tagId: id, userId });
+  try {
+    const deleted = await TagRepository.delete(id, userId);
+    if (deleted) {
+      logger.info('Tag deleted successfully', { tagId: id, userId });
+    }
+    return deleted;
+  } catch (error) {
+    logger.logError('Error in deleteTag', error, { tagId: id, userId });
+    throw error;
+  }
 };
 
 /**
@@ -61,7 +104,15 @@ export const deleteTag = async (id, userId) => {
  * @returns {Promise<Array>}
  */
 export const getTagsByToteId = async (toteId) => {
-  return await TagRepository.findByToteId(toteId);
+  logger.debug('Getting tags for tote', { toteId });
+  try {
+    const tags = await TagRepository.findByToteId(toteId);
+    logger.debug('Tags retrieved for tote', { toteId, count: tags.length });
+    return tags;
+  } catch (error) {
+    logger.logError('Error in getTagsByToteId', error, { toteId });
+    throw error;
+  }
 };
 
 /**
@@ -70,7 +121,15 @@ export const getTagsByToteId = async (toteId) => {
  * @returns {Promise<Array>}
  */
 export const getTagsByItemId = async (itemId) => {
-  return await TagRepository.findByItemId(itemId);
+  logger.debug('Getting tags for item', { itemId });
+  try {
+    const tags = await TagRepository.findByItemId(itemId);
+    logger.debug('Tags retrieved for item', { itemId, count: tags.length });
+    return tags;
+  } catch (error) {
+    logger.logError('Error in getTagsByItemId', error, { itemId });
+    throw error;
+  }
 };
 
 /**
@@ -80,7 +139,15 @@ export const getTagsByItemId = async (itemId) => {
  * @returns {Promise<boolean>}
  */
 export const addTagToTote = async (toteId, tagId) => {
-  return await TagRepository.addToTote(toteId, tagId);
+  logger.info('Adding tag to tote', { toteId, tagId });
+  try {
+    const result = await TagRepository.addToTote(toteId, tagId);
+    logger.info('Tag added to tote successfully', { toteId, tagId });
+    return result;
+  } catch (error) {
+    logger.logError('Error in addTagToTote', error, { toteId, tagId });
+    throw error;
+  }
 };
 
 /**
@@ -90,7 +157,15 @@ export const addTagToTote = async (toteId, tagId) => {
  * @returns {Promise<boolean>}
  */
 export const removeTagFromTote = async (toteId, tagId) => {
-  return await TagRepository.removeFromTote(toteId, tagId);
+  logger.info('Removing tag from tote', { toteId, tagId });
+  try {
+    const result = await TagRepository.removeFromTote(toteId, tagId);
+    logger.info('Tag removed from tote successfully', { toteId, tagId });
+    return result;
+  } catch (error) {
+    logger.logError('Error in removeTagFromTote', error, { toteId, tagId });
+    throw error;
+  }
 };
 
 /**
@@ -100,7 +175,15 @@ export const removeTagFromTote = async (toteId, tagId) => {
  * @returns {Promise<boolean>}
  */
 export const addTagToItem = async (itemId, tagId) => {
-  return await TagRepository.addToItem(itemId, tagId);
+  logger.info('Adding tag to item', { itemId, tagId });
+  try {
+    const result = await TagRepository.addToItem(itemId, tagId);
+    logger.info('Tag added to item successfully', { itemId, tagId });
+    return result;
+  } catch (error) {
+    logger.logError('Error in addTagToItem', error, { itemId, tagId });
+    throw error;
+  }
 };
 
 /**
@@ -110,5 +193,13 @@ export const addTagToItem = async (itemId, tagId) => {
  * @returns {Promise<boolean>}
  */
 export const removeTagFromItem = async (itemId, tagId) => {
-  return await TagRepository.removeFromItem(itemId, tagId);
+  logger.info('Removing tag from item', { itemId, tagId });
+  try {
+    const result = await TagRepository.removeFromItem(itemId, tagId);
+    logger.info('Tag removed from item successfully', { itemId, tagId });
+    return result;
+  } catch (error) {
+    logger.logError('Error in removeTagFromItem', error, { itemId, tagId });
+    throw error;
+  }
 };

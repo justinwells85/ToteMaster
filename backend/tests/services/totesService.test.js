@@ -28,6 +28,7 @@ describe('Totes Service', () => {
 
   describe('createTote', () => {
     it('should create a tote with valid data', async () => {
+      const userId = 1;
       const toteData = {
         location: 'Garage',
         locationId: 'loc-123',
@@ -40,19 +41,21 @@ describe('Totes Service', () => {
       const mockCreatedTote = {
         id: 123, // Integer ID
         ...toteData,
+        userId,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
 
       mockToteRepository.create.mockResolvedValue(mockCreatedTote);
 
-      const result = await createTote(toteData);
+      const result = await createTote(toteData, userId);
 
-      expect(mockToteRepository.create).toHaveBeenCalledWith(toteData);
+      expect(mockToteRepository.create).toHaveBeenCalledWith({ ...toteData, userId });
       expect(result).toEqual(mockCreatedTote);
     });
 
     it('should create tote with minimal data', async () => {
+      const userId = 1;
       const toteData = {
         description: 'Minimal Tote',
       };
@@ -71,18 +74,19 @@ describe('Totes Service', () => {
 
       mockToteRepository.create.mockResolvedValue(mockCreatedTote);
 
-      const result = await createTote(toteData);
+      const result = await createTote(toteData, userId);
 
-      expect(mockToteRepository.create).toHaveBeenCalledWith(toteData);
+      expect(mockToteRepository.create).toHaveBeenCalledWith({ ...toteData, userId });
       expect(result).toEqual(mockCreatedTote);
     });
 
     it('should throw validation error for invalid data', async () => {
+      const userId = 1;
       const invalidToteData = {
         description: 'A'.repeat(1001), // Description too long should fail
       };
 
-      await expect(createTote(invalidToteData)).rejects.toThrow('Validation failed');
+      await expect(createTote(invalidToteData, userId)).rejects.toThrow('Validation failed');
       expect(mockToteRepository.create).not.toHaveBeenCalled();
     });
 
@@ -112,6 +116,7 @@ describe('Totes Service', () => {
 
   describe('getAllTotes', () => {
     it('should return all totes', async () => {
+      const userId = 1;
       const mockTotes = [
         { id: 1, description: 'Tote 1', location: 'Garage' },
         { id: 2, description: 'Tote 2', location: 'Basement' },
@@ -119,16 +124,17 @@ describe('Totes Service', () => {
 
       mockToteRepository.findAll.mockResolvedValue(mockTotes);
 
-      const result = await getAllTotes();
+      const result = await getAllTotes(userId);
 
-      expect(mockToteRepository.findAll).toHaveBeenCalled();
+      expect(mockToteRepository.findAll).toHaveBeenCalledWith(userId);
       expect(result).toEqual(mockTotes);
     });
 
     it('should return empty array when no totes exist', async () => {
+      const userId = 1;
       mockToteRepository.findAll.mockResolvedValue([]);
 
-      const result = await getAllTotes();
+      const result = await getAllTotes(userId);
 
       expect(result).toEqual([]);
     });
@@ -136,6 +142,7 @@ describe('Totes Service', () => {
 
   describe('getToteById', () => {
     it('should return tote when found', async () => {
+      const userId = 1;
       const mockTote = {
         id: 123,
         description: 'Test Tote',
@@ -151,6 +158,7 @@ describe('Totes Service', () => {
     });
 
     it('should return null when tote not found', async () => {
+      const userId = 1;
       mockToteRepository.findById.mockResolvedValue(null);
 
       const result = await getToteById(999);
@@ -161,14 +169,18 @@ describe('Totes Service', () => {
 
   describe('updateTote', () => {
     it('should update tote with valid data', async () => {
+      const userId = 1;
       const updates = {
         description: 'Updated Description',
         location: 'Basement',
+        color: 'red',
       };
 
+      const mockExistingTote = { id: 1, location: 'Garage', userId };
       const mockUpdatedTote = {
         id: 123,
         ...updates,
+        userId,
         updatedAt: new Date().toISOString(),
       };
 
@@ -182,14 +194,17 @@ describe('Totes Service', () => {
     });
 
     it('should allow partial updates', async () => {
+      const userId = 1;
       const updates = {
         location: 'New Location',
       };
 
+      const mockExistingTote = { id: 1, location: 'Garage', userId };
       const mockUpdatedTote = {
         id: 123,
         description: 'Original Description',
         location: 'New Location',
+        userId,
         updatedAt: new Date().toISOString(),
       };
 
@@ -203,6 +218,7 @@ describe('Totes Service', () => {
     });
 
     it('should throw validation error for invalid update data', async () => {
+      const userId = 1;
       const invalidUpdates = {
         description: 'A'.repeat(1001), // Description too long should fail
       };
@@ -214,7 +230,7 @@ describe('Totes Service', () => {
     it('should return null when updating non-existent tote', async () => {
       const updates = { description: 'Updated' };
 
-      mockToteRepository.update.mockResolvedValue(null);
+      mockToteRepository.findById.mockResolvedValue(null);
 
       const result = await updateTote(999, updates);
 
@@ -250,6 +266,7 @@ describe('Totes Service', () => {
     });
 
     it('should return false when deleting non-existent tote', async () => {
+      const userId = 1;
       mockToteRepository.findById.mockResolvedValue(null);
 
       const result = await deleteTote(999);
@@ -263,6 +280,7 @@ describe('Totes Service', () => {
 
   describe('getToteItems', () => {
     it('should return items in tote', async () => {
+      const userId = 1;
       const mockItems = [
         { id: 1, name: 'Item 1', toteId: 123 },
         { id: 2, name: 'Item 2', toteId: 123 },
@@ -277,6 +295,7 @@ describe('Totes Service', () => {
     });
 
     it('should return empty array for empty tote', async () => {
+      const userId = 1;
       mockToteRepository.getItemsInTote.mockResolvedValue([]);
 
       const result = await getToteItems(123);
@@ -285,6 +304,7 @@ describe('Totes Service', () => {
     });
 
     it('should return null for non-existent tote', async () => {
+      const userId = 1;
       mockToteRepository.getItemsInTote.mockResolvedValue(null);
 
       const result = await getToteItems(999);
