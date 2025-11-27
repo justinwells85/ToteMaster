@@ -290,7 +290,7 @@ export const analyzeTotePhotos = async (toteId, userId) => {
       logger.warn('AI analysis requested but not available', { toteId, userId });
       return {
         available: false,
-        message: 'AI features are not enabled. Please configure OpenAI API key.',
+        message: 'AI features are not enabled. Please start the YOLO service.',
         items: [],
       };
     }

@@ -167,10 +167,10 @@ export const analyzePhotos = async (req, res) => {
     });
 
     // Provide user-friendly error messages
-    if (error.message.includes('quota')) {
-      return res.status(429).json({ error: 'AI service quota exceeded. Please try again later.' });
-    } else if (error.message.includes('API key')) {
-      return res.status(503).json({ error: 'AI service configuration error. Please contact support.' });
+    if (error.message.includes('not running')) {
+      return res.status(503).json({ error: 'YOLO service is not running. Please start the AI service.' });
+    } else if (error.message.includes('timeout')) {
+      return res.status(408).json({ error: 'Analysis timeout. Try analyzing fewer photos or smaller images.' });
     } else if (error.message.includes('image')) {
       return res.status(400).json({ error: 'Unable to process image. Please ensure photos are accessible.' });
     }
