@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getAllTotes, updateTote, deleteTote } from '@/services/totesService';
+import { getAllTotes, updateTote, deleteTote, uploadTotePhotos, deleteTotePhoto } from '@/services/totesService';
 import { getAllItems } from '@/services/itemsService';
 import { getAllLocations } from '@/services/locationsService';
 import { getAllTags, getTagsByToteId, addTagToTote, removeTagFromTote } from '@/services/tagsService';
@@ -11,7 +11,9 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { ArrowLeft, Edit, Trash2, Package, MapPin, QrCode, Tag as TagIcon, Hash, Image as ImageIcon, X } from 'lucide-react';
+import { ArrowLeft, Edit, Trash2, Package, MapPin, QrCode, Tag as TagIcon, Hash, Image as ImageIcon, X, Upload } from 'lucide-react';
+import PhotoUpload from '@/components/PhotoUpload';
+import PhotoGallery from '@/components/PhotoGallery';
 
 export default function ToteDetail() {
   const { id } = useParams();
@@ -19,8 +21,11 @@ export default function ToteDetail() {
   const queryClient = useQueryClient();
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isTagsOpen, setIsTagsOpen] = useState(false);
+  const [isPhotoUploadOpen, setIsPhotoUploadOpen] = useState(false);
   const [editForm, setEditForm] = useState({ locationId: '', description: '', color: '', tags: [] });
   const [selectedTags, setSelectedTags] = useState([]);
+  const [selectedPhotos, setSelectedPhotos] = useState([]);
+  const [isUploading, setIsUploading] = useState(false);
 
   const { data: totes = [] } = useQuery({
     queryKey: ['totes'],
@@ -110,6 +115,36 @@ export default function ToteDetail() {
       setIsTagsOpen(false);
     } catch (err) {
       alert(err.message || 'Failed to update tags');
+    }
+  };
+
+  const handleUploadPhotos = async () => {
+    if (selectedPhotos.length === 0) {
+      alert('Please select at least one photo');
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      await uploadTotePhotos(id, selectedPhotos);
+      queryClient.invalidateQueries({ queryKey: ['totes'] });
+      setIsPhotoUploadOpen(false);
+      setSelectedPhotos([]);
+    } catch (err) {
+      console.error('Upload error:', err);
+      alert(err.message || 'Failed to upload photos');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleDeletePhoto = async (photoUrl) => {
+    try {
+      await deleteTotePhoto(id, photoUrl);
+      queryClient.invalidateQueries({ queryKey: ['totes'] });
+    } catch (err) {
+      console.error('Delete error:', err);
+      throw err; // Re-throw to let PhotoGallery handle the error
     }
   };
 
@@ -295,33 +330,25 @@ export default function ToteDetail() {
         )}
 
         {/* Photos */}
-        {tote.photos && tote.photos.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Photos</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {tote.photos.map((photo, index) => (
-                  <div
-                    key={index}
-                    className="aspect-square rounded-lg overflow-hidden border bg-muted flex items-center justify-center"
-                  >
-                    <img
-                      src={photo}
-                      alt={`Tote photo ${index + 1}`}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        e.target.style.display = 'none';
-                        e.target.parentElement.innerHTML = `<div class="flex items-center justify-center w-full h-full text-muted-foreground"><ImageIcon class="h-12 w-12" /></div>`;
-                      }}
-                    />
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>Photos</CardTitle>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsPhotoUploadOpen(true)}
+            >
+              <Upload className="h-4 w-4 mr-2" />
+              Upload Photos
+            </Button>
+          </CardHeader>
+          <CardContent>
+            <PhotoGallery
+              photos={tote?.photos || []}
+              onDeletePhoto={handleDeletePhoto}
+            />
+          </CardContent>
+        </Card>
       </div>
 
       {/* Items in Tote */}
@@ -461,6 +488,41 @@ export default function ToteDetail() {
             </Button>
             <Button onClick={handleSaveTags}>
               Save Tags
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Photo Upload Dialog */}
+      <Dialog open={isPhotoUploadOpen} onOpenChange={setIsPhotoUploadOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Upload Photos</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <PhotoUpload
+              onPhotosSelected={setSelectedPhotos}
+              maxFiles={10}
+              disabled={isUploading}
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setIsPhotoUploadOpen(false);
+                setSelectedPhotos([]);
+              }}
+              disabled={isUploading}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleUploadPhotos}
+              disabled={isUploading || selectedPhotos.length === 0}
+            >
+              {isUploading ? 'Uploading...' : `Upload ${selectedPhotos.length} Photo${selectedPhotos.length !== 1 ? 's' : ''}`}
             </Button>
           </DialogFooter>
         </DialogContent>
