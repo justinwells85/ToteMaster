@@ -72,17 +72,9 @@ describe('Totes Photo Upload Integration Tests', () => {
   });
 
   describe('POST /api/totes/:id/photos', () => {
-    it('should successfully upload photos', async () => {
-      // Since multer middleware is mocked and doesn't actually parse files,
-      // this test verifies the endpoint exists and has proper error handling
-      const response = await request(app)
-        .post('/api/totes/123/photos')
-        .expect(400); // No actual files = 400
-
-      expect(response.body).toHaveProperty('error', 'No files uploaded');
-    });
-
     it('should return 400 when no files uploaded', async () => {
+      // Note: Since multer middleware is mocked and doesn't actually parse files,
+      // we can only test validation and error handling, not actual upload success
       const response = await request(app)
         .post('/api/totes/123/photos')
         .expect(400);
@@ -90,30 +82,12 @@ describe('Totes Photo Upload Integration Tests', () => {
       expect(response.body).toHaveProperty('error', 'No files uploaded');
     });
 
-    it('should return 404 when tote not found', async () => {
-      // Without real file upload, this tests error handling path
-      const response = await request(app)
-        .post('/api/totes/999/photos')
-        .expect(400); // No files = 400 before checking tote
-
-      expect(response.body).toHaveProperty('error');
-    });
-
-    it('should handle upload errors gracefully', async () => {
-      // Tests that endpoint handles errors properly
-      const response = await request(app)
-        .post('/api/totes/123/photos')
-        .expect(400); // No files uploaded
-
-      expect(response.body).toHaveProperty('error');
-    });
-
     it('should require authentication', async () => {
-      // This test would fail if auth was removed from routes
-      // The mock auth passes, but we can verify it's called
+      // This test would fail if auth middleware was removed from the route
+      // The mock auth passes, but we verify the endpoint is protected
       const response = await request(app)
         .post('/api/totes/123/photos')
-        .expect(400); // Fails on no files, but got past auth
+        .expect(400); // Fails on no files validation, but successfully passed auth
 
       expect(response.body.error).toBe('No files uploaded');
     });
@@ -221,54 +195,6 @@ describe('Totes Photo Upload Integration Tests', () => {
       // Should get an error (either 400 or 404), proving auth middleware ran
       expect(response.body).toHaveProperty('error');
       expect([400, 404]).toContain(response.status);
-    });
-  });
-
-  describe('Photo Upload Validation', () => {
-    it('should validate file types in middleware', async () => {
-      // This would be tested with actual multer in real integration tests
-      // For now, we test that the endpoint exists and responds
-      const response = await request(app)
-        .post('/api/totes/123/photos')
-        .expect(400);
-
-      expect(response.body.error).toBe('No files uploaded');
-    });
-
-    it('should enforce file size limits', async () => {
-      // Multer middleware would handle this
-      // We verify the endpoint structure is correct
-      mockToteRepository.findById.mockResolvedValue({ id: '123', photos: [] });
-
-      const response = await request(app)
-        .post('/api/totes/123/photos')
-        .expect(400);
-
-      expect(response.body).toHaveProperty('error');
-    });
-  });
-
-  describe('Photo URL Format', () => {
-    it('should return proper photo URLs', async () => {
-      // Test that endpoint is structured correctly
-      // Actual URL format tested in unit tests
-      const response = await request(app)
-        .post('/api/totes/123/photos')
-        .expect(400); // No files
-
-      expect(response.body).toHaveProperty('error');
-    });
-  });
-
-  describe('Concurrent Photo Operations', () => {
-    it('should handle multiple photo uploads to same tote', async () => {
-      // Test endpoint availability for concurrent operations
-      // Actual concurrency tested in unit tests
-      const response = await request(app)
-        .post('/api/totes/123/photos')
-        .expect(400); // No files
-
-      expect(response.body).toHaveProperty('error', 'No files uploaded');
     });
   });
 });
