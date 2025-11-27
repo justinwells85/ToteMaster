@@ -1,6 +1,8 @@
 import ToteRepository from '../db/repositories/ToteRepository.js';
 import { validateTote } from '../models/Tote.js';
 import logger from '../utils/logger.js';
+import { getStorageService } from '../storage/index.js';
+import { generatePhotoKey } from '../middleware/upload.js';
 
 export const getAllTotes = async (userId) => {
   const timer = logger.startTimer();
@@ -138,6 +140,135 @@ export const getToteItems = async (toteId, userId) => {
     return items;
   } catch (error) {
     logger.logError('Error in getToteItems', error, { toteId, userId });
+    throw error;
+  }
+};
+
+/**
+ * Upload photos to a tote
+ * @param {number} toteId - The tote ID
+ * @param {Array} files - Array of multer file objects
+ * @param {number} userId - The user ID
+ * @returns {Promise<Object>} Updated tote with new photos
+ */
+export const uploadTotePhotos = async (toteId, files, userId) => {
+  const timer = logger.startTimer();
+  logger.info('Uploading photos to tote', { toteId, userId, fileCount: files.length });
+
+  try {
+    // Check if tote exists and belongs to user
+    const existingTote = await ToteRepository.findById(toteId, userId);
+    if (!existingTote) {
+      logger.warn('Tote not found for photo upload', { toteId, userId });
+      return null;
+    }
+
+    const storage = getStorageService();
+    const uploadedUrls = [];
+
+    // Upload each file
+    for (const file of files) {
+      const key = generatePhotoKey(file, `totes/${toteId}`);
+
+      logger.debug('Uploading photo', {
+        toteId,
+        userId,
+        filename: file.originalname,
+        size: file.size,
+        key
+      });
+
+      const result = await storage.putObject({
+        key,
+        body: file.buffer,
+        contentType: file.mimetype,
+        metadata: {
+          toteId: toteId.toString(),
+          userId: userId.toString(),
+          originalName: file.originalname
+        }
+      });
+
+      uploadedUrls.push(result.url);
+      logger.debug('Photo uploaded successfully', { url: result.url });
+    }
+
+    // Add new URLs to existing photos array
+    const currentPhotos = existingTote.photos || [];
+    const updatedPhotos = [...currentPhotos, ...uploadedUrls];
+
+    // Update tote with new photos
+    const updatedTote = await ToteRepository.update(toteId, { photos: updatedPhotos }, userId);
+
+    logger.info('Photos uploaded and tote updated', {
+      toteId,
+      userId,
+      newPhotoCount: uploadedUrls.length,
+      totalPhotos: updatedPhotos.length
+    });
+    timer.end('uploadTotePhotos completed');
+
+    return updatedTote;
+  } catch (error) {
+    logger.logError('Error in uploadTotePhotos', error, { toteId, userId });
+    throw error;
+  }
+};
+
+/**
+ * Delete a photo from a tote
+ * @param {number} toteId - The tote ID
+ * @param {string} photoUrl - The photo URL to delete
+ * @param {number} userId - The user ID
+ * @returns {Promise<Object>} Updated tote with photo removed
+ */
+export const deleteTotePhoto = async (toteId, photoUrl, userId) => {
+  const timer = logger.startTimer();
+  logger.info('Deleting photo from tote', { toteId, userId, photoUrl });
+
+  try {
+    // Check if tote exists and belongs to user
+    const existingTote = await ToteRepository.findById(toteId, userId);
+    if (!existingTote) {
+      logger.warn('Tote not found for photo deletion', { toteId, userId });
+      return null;
+    }
+
+    // Check if photo exists in tote
+    const currentPhotos = existingTote.photos || [];
+    if (!currentPhotos.includes(photoUrl)) {
+      logger.warn('Photo not found in tote', { toteId, userId, photoUrl });
+      throw new Error('Photo not found in this tote');
+    }
+
+    const storage = getStorageService();
+
+    // Delete from storage
+    try {
+      const key = storage.keyFromUrl(photoUrl);
+      await storage.deleteObject({ key });
+      logger.debug('Photo deleted from storage', { key });
+    } catch (error) {
+      logger.warn('Failed to delete photo from storage', { error: error.message, photoUrl });
+      // Continue even if storage deletion fails - remove from database anyway
+    }
+
+    // Remove URL from photos array
+    const updatedPhotos = currentPhotos.filter(url => url !== photoUrl);
+
+    // Update tote
+    const updatedTote = await ToteRepository.update(toteId, { photos: updatedPhotos }, userId);
+
+    logger.info('Photo deleted and tote updated', {
+      toteId,
+      userId,
+      remainingPhotos: updatedPhotos.length
+    });
+    timer.end('deleteTotePhoto completed');
+
+    return updatedTote;
+  } catch (error) {
+    logger.logError('Error in deleteTotePhoto', error, { toteId, userId, photoUrl });
     throw error;
   }
 };
