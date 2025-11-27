@@ -140,3 +140,41 @@ export const deletePhoto = async (req, res) => {
     res.status(400).json({ error: error.message });
   }
 };
+
+export const analyzePhotos = async (req, res) => {
+  try {
+    const result = await totesService.analyzeTotePhotos(
+      req.params.id,
+      req.user.userId
+    );
+
+    if (result === null) {
+      logger.debug('Tote not found for photo analysis in controller', { toteId: req.params.id, userId: req.user.userId });
+      return res.status(404).json({ error: 'Tote not found' });
+    }
+
+    logger.info('Photos analyzed via controller', {
+      toteId: req.params.id,
+      userId: req.user.userId,
+      itemsFound: result.items.length
+    });
+
+    res.json(result);
+  } catch (error) {
+    logger.logError('Error in analyzePhotos controller', error, {
+      toteId: req.params.id,
+      userId: req.user.userId
+    });
+
+    // Provide user-friendly error messages
+    if (error.message.includes('quota')) {
+      return res.status(429).json({ error: 'AI service quota exceeded. Please try again later.' });
+    } else if (error.message.includes('API key')) {
+      return res.status(503).json({ error: 'AI service configuration error. Please contact support.' });
+    } else if (error.message.includes('image')) {
+      return res.status(400).json({ error: 'Unable to process image. Please ensure photos are accessible.' });
+    }
+
+    res.status(500).json({ error: 'Failed to analyze photos. Please try again.' });
+  }
+};

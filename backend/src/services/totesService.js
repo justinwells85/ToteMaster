@@ -3,6 +3,7 @@ import { validateTote } from '../models/Tote.js';
 import logger from '../utils/logger.js';
 import { getStorageService } from '../storage/index.js';
 import { generatePhotoKey } from '../middleware/upload.js';
+import { isAIAvailable, analyzeMultiplePhotos } from './aiService.js';
 
 export const getAllTotes = async (userId) => {
   const timer = logger.startTimer();
@@ -269,6 +270,69 @@ export const deleteTotePhoto = async (toteId, photoUrl, userId) => {
     return updatedTote;
   } catch (error) {
     logger.logError('Error in deleteTotePhoto', error, { toteId, userId, photoUrl });
+    throw error;
+  }
+};
+
+/**
+ * Analyze tote photos using AI to identify items
+ * @param {string} toteId - The tote ID
+ * @param {number} userId - The user ID
+ * @returns {Promise<Object>} Object containing AI availability status and identified items
+ */
+export const analyzeTotePhotos = async (toteId, userId) => {
+  const timer = logger.startTimer();
+  logger.info('Analyzing tote photos with AI', { toteId, userId });
+
+  try {
+    // Check if AI is available
+    if (!isAIAvailable()) {
+      logger.warn('AI analysis requested but not available', { toteId, userId });
+      return {
+        available: false,
+        message: 'AI features are not enabled. Please configure OpenAI API key.',
+        items: [],
+      };
+    }
+
+    // Check if tote exists and belongs to user
+    const tote = await ToteRepository.findById(toteId, userId);
+    if (!tote) {
+      logger.warn('Tote not found for AI analysis', { toteId, userId });
+      return null;
+    }
+
+    // Check if tote has photos
+    const photos = tote.photos || [];
+    if (photos.length === 0) {
+      logger.info('No photos to analyze for tote', { toteId, userId });
+      return {
+        available: true,
+        message: 'No photos available to analyze. Upload photos first.',
+        items: [],
+      };
+    }
+
+    // Analyze photos with AI
+    const identifiedItems = await analyzeMultiplePhotos(photos);
+
+    logger.info('AI analysis completed for tote', {
+      toteId,
+      userId,
+      photosAnalyzed: photos.length,
+      itemsIdentified: identifiedItems.length,
+    });
+
+    timer.end('analyzeTotePhotos completed');
+
+    return {
+      available: true,
+      message: `Found ${identifiedItems.length} items in ${photos.length} photo(s)`,
+      items: identifiedItems,
+      photosAnalyzed: photos.length,
+    };
+  } catch (error) {
+    logger.logError('Error in analyzeTotePhotos', error, { toteId, userId });
     throw error;
   }
 };

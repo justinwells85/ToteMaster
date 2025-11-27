@@ -43,4 +43,11 @@ router.delete(
   totesController.deletePhoto
 );
 
+// POST analyze tote photos with AI
+router.post(
+  '/:id/analyze-photos',
+  validateIdParam(),
+  totesController.analyzePhotos
+);
+
 export default router;

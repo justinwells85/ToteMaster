@@ -83,3 +83,12 @@ export const deleteTotePhoto = async (id, photoUrl) => {
     data: { photoUrl },
   });
 };
+
+/**
+ * Analyze tote photos using AI to identify items
+ * @param {String} id - Tote ID
+ * @returns {Promise} - Analysis results with identified items
+ */
+export const analyzeTotePhotos = async (id) => {
+  return await apiClient.post(`/totes/${id}/analyze-photos`);
+};

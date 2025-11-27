@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getAllTotes, updateTote, deleteTote, uploadTotePhotos, deleteTotePhoto } from '@/services/totesService';
-import { getAllItems } from '@/services/itemsService';
+import { getAllTotes, updateTote, deleteTote, uploadTotePhotos, deleteTotePhoto, analyzeTotePhotos } from '@/services/totesService';
+import { getAllItems, createItem } from '@/services/itemsService';
 import { getAllLocations } from '@/services/locationsService';
 import { getAllTags, getTagsByToteId, addTagToTote, removeTagFromTote } from '@/services/tagsService';
 import { generateToteLabel } from '@/lib/labelGenerator';
@@ -11,9 +11,10 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { ArrowLeft, Edit, Trash2, Package, MapPin, QrCode, Tag as TagIcon, Hash, Image as ImageIcon, X, Upload } from 'lucide-react';
+import { ArrowLeft, Edit, Trash2, Package, MapPin, QrCode, Tag as TagIcon, Hash, Image as ImageIcon, X, Upload, Sparkles } from 'lucide-react';
 import PhotoUpload from '@/components/PhotoUpload';
 import PhotoGallery from '@/components/PhotoGallery';
+import AIItemSuggestions from '@/components/AIItemSuggestions';
 
 export default function ToteDetail() {
   const { id } = useParams();
@@ -22,10 +23,13 @@ export default function ToteDetail() {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isTagsOpen, setIsTagsOpen] = useState(false);
   const [isPhotoUploadOpen, setIsPhotoUploadOpen] = useState(false);
+  const [isAIAnalysisOpen, setIsAIAnalysisOpen] = useState(false);
   const [editForm, setEditForm] = useState({ locationId: '', description: '', color: '', tags: [] });
   const [selectedTags, setSelectedTags] = useState([]);
   const [selectedPhotos, setSelectedPhotos] = useState([]);
   const [isUploading, setIsUploading] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [aiSuggestions, setAiSuggestions] = useState([]);
 
   const { data: totes = [] } = useQuery({
     queryKey: ['totes'],
@@ -145,6 +149,64 @@ export default function ToteDetail() {
     } catch (err) {
       console.error('Delete error:', err);
       throw err; // Re-throw to let PhotoGallery handle the error
+    }
+  };
+
+  const handleAnalyzePhotos = async () => {
+    if (!tote?.photos || tote.photos.length === 0) {
+      alert('Please upload photos first before analyzing');
+      return;
+    }
+
+    setIsAnalyzing(true);
+    try {
+      const response = await analyzeTotePhotos(id);
+
+      if (!response.available) {
+        alert(response.message || 'AI features are not available');
+        return;
+      }
+
+      if (response.items.length === 0) {
+        alert(response.message || 'No items were identified in the photos');
+        return;
+      }
+
+      setAiSuggestions(response.items);
+      setIsAIAnalysisOpen(true);
+    } catch (err) {
+      console.error('Analysis error:', err);
+      alert(err.message || 'Failed to analyze photos');
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const handleCreateItemsFromAI = async (items) => {
+    try {
+      // Create all selected items
+      const createPromises = items.map((item) =>
+        createItem({
+          name: item.name,
+          description: item.description,
+          category: item.category,
+          toteId: id,
+          quantity: item.quantity,
+          condition: item.condition,
+        })
+      );
+
+      await Promise.all(createPromises);
+
+      // Refresh items and close dialog
+      queryClient.invalidateQueries({ queryKey: ['items'] });
+      setIsAIAnalysisOpen(false);
+      setAiSuggestions([]);
+
+      alert(`Successfully created ${items.length} item${items.length !== 1 ? 's' : ''}`);
+    } catch (err) {
+      console.error('Error creating items:', err);
+      alert(err.message || 'Failed to create some items');
     }
   };
 
@@ -333,14 +395,25 @@ export default function ToteDetail() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Photos</CardTitle>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsPhotoUploadOpen(true)}
-            >
-              <Upload className="h-4 w-4 mr-2" />
-              Upload Photos
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleAnalyzePhotos}
+                disabled={isAnalyzing || !tote?.photos || tote.photos.length === 0}
+              >
+                <Sparkles className="h-4 w-4 mr-2" />
+                {isAnalyzing ? 'Analyzing...' : 'Analyze with AI'}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsPhotoUploadOpen(true)}
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                Upload Photos
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             <PhotoGallery
@@ -525,6 +598,23 @@ export default function ToteDetail() {
               {isUploading ? 'Uploading...' : `Upload ${selectedPhotos.length} Photo${selectedPhotos.length !== 1 ? 's' : ''}`}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* AI Analysis Dialog */}
+      <Dialog open={isAIAnalysisOpen} onOpenChange={setIsAIAnalysisOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden">
+          <DialogHeader>
+            <DialogTitle>AI Identified Items</DialogTitle>
+          </DialogHeader>
+          <div className="overflow-y-auto">
+            <AIItemSuggestions
+              items={aiSuggestions}
+              toteId={id}
+              onCreateAll={handleCreateItemsFromAI}
+              onClose={() => setIsAIAnalysisOpen(false)}
+            />
+          </div>
         </DialogContent>
       </Dialog>
     </div>
