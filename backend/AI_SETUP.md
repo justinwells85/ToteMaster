@@ -1,21 +1,22 @@
 # AI-Powered Image Analysis Setup Guide
 
-This guide explains how to set up and use the YOLOv8-based AI image analysis feature for automatic inventory item detection.
+This guide explains how to set up and use the YOLOv11-based AI image analysis feature for automatic inventory item detection.
 
 ## Overview
 
-The system now uses **YOLOv8** (You Only Look Once) for local, cost-free object detection instead of cloud-based APIs. YOLO is a state-of-the-art computer vision model that can detect 80 different object types in real-time.
+The system now uses **YOLOv11** (You Only Look Once) for local, cost-free object detection instead of cloud-based APIs. YOLO is a state-of-the-art computer vision model that can detect 80 different object types in real-time.
 
 ### Benefits vs. OpenAI GPT-4 Vision
 
-| Feature | YOLOv8 | OpenAI GPT-4 Vision |
+| Feature | YOLOv11 | OpenAI GPT-4 Vision |
 |---------|---------|---------------------|
 | **Cost** | Free (local) | ~$0.01 per image |
-| **Speed** | ~30ms per image (GPU) | ~2-5 seconds per image |
+| **Speed** | ~20ms per image (GPU) | ~2-5 seconds per image |
 | **Privacy** | Fully local, no data sent externally | Images sent to OpenAI |
 | **Requirements** | Python 3.8+, ~200MB disk | API key, internet |
 | **Accuracy** | Good for objects, no descriptions | Excellent for descriptions |
 | **Offline** | ✅ Works offline | ❌ Requires internet |
+| **vs YOLOv8** | 22% faster, better accuracy | N/A |
 
 ## Architecture
 
@@ -26,7 +27,7 @@ Node.js Backend (Express)
     ↓ HTTP (localhost:8001)
 Python YOLO Service (FastAPI)
     ↓
-YOLOv8 Model
+YOLOv11 Model
 ```
 
 ## Quick Start
@@ -71,7 +72,7 @@ venv\Scripts\activate.bat
 pip install -r requirements.txt
 ```
 
-On first run, YOLOv8n model (~6MB) will be automatically downloaded.
+On first run, YOLOv11n model (~5MB) will be automatically downloaded.
 
 #### 2. Start YOLO Service
 
@@ -84,8 +85,8 @@ python main.py
 
 You should see:
 ```
-INFO:     Loading YOLOv8 model...
-INFO:     YOLOv8 model loaded successfully
+INFO:     Loading YOLOv11 model...
+INFO:     YOLOv11 model loaded successfully
 INFO:     Application startup complete.
 INFO:     Uvicorn running on http://0.0.0.0:8001
 ```
@@ -100,7 +101,7 @@ npm run dev
 
 You should see:
 ```
-INFO: YOLO service is available {"url":"http://localhost:8001","model":"YOLOv8n"}
+INFO: YOLO service is available {"url":"http://localhost:8001","model":"YOLOv11n"}
 Server running on port 3000
 ```
 
@@ -158,7 +159,7 @@ model = YOLO('yolov8m.pt')  # Even better accuracy
 
 ## Detected Object Classes
 
-YOLOv8 can detect 80 object types from the COCO dataset:
+YOLOv11 can detect 80 object types from the COCO dataset:
 
 ### Electronics
 laptop, cell phone, tv, keyboard, mouse, remote, clock
@@ -218,7 +219,7 @@ For detecting custom items not in COCO dataset:
    - [Roboflow](https://roboflow.com/)
    - [LabelImg](https://github.com/heartexlabs/labelImg)
    - [CVAT](https://www.cvat.ai/)
-3. **Train custom YOLOv8**:
+3. **Train custom YOLOv11**:
    ```python
    from ultralytics import YOLO
    model = YOLO('yolov8n.pt')
@@ -229,7 +230,7 @@ For detecting custom items not in COCO dataset:
    model = YOLO('runs/detect/train/weights/best.pt')
    ```
 
-See [Ultralytics YOLOv8 Training Guide](https://docs.ultralytics.com/modes/train/)
+See [Ultralytics YOLOv11 Training Guide](https://docs.ultralytics.com/modes/train/)
 
 ## Troubleshooting
 
@@ -417,7 +418,7 @@ A: Yes! Use Docker or deploy both services (Node.js + Python) on your server.
 A: ~500MB (Python venv + dependencies + YOLO model)
 
 **Q: Can I use custom object classes?**
-A: Yes, but you'll need to train a custom YOLOv8 model. See "Train Custom YOLO Model" above.
+A: Yes, but you'll need to train a custom YOLOv11 model. See "Train Custom YOLO Model" above.
 
 **Q: Why is detection slow on Windows?**
 A: YOLO uses CPU by default. Enable GPU acceleration for 10-30x speedup (see GPU Acceleration section).
@@ -432,7 +433,7 @@ For issues or questions:
 
 ## Resources
 
-- [YOLOv8 Documentation](https://docs.ultralytics.com/)
+- [YOLOv11 Documentation](https://docs.ultralytics.com/)
 - [COCO Dataset Classes](https://cocodataset.org/#explore)
 - [FastAPI Documentation](https://fastapi.tiangolo.com/)
 - [Training Custom Models](https://docs.ultralytics.com/modes/train/)

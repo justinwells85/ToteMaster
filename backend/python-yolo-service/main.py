@@ -1,6 +1,6 @@
 """
 YOLO Object Detection Service for Tote Master
-Uses YOLOv8 to detect objects in tote photos and return structured item data
+Uses YOLOv11 to detect objects in tote photos and return structured item data
 """
 
 from fastapi import FastAPI, HTTPException
@@ -18,7 +18,7 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="YOLO Object Detection Service", version="1.0.0")
+app = FastAPI(title="YOLO Object Detection Service", version="2.0.0")
 
 # CORS middleware
 app.add_middleware(
@@ -29,10 +29,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Load YOLOv8 model (will download on first run)
-logger.info("Loading YOLOv8 model...")
-model = YOLO('yolov8n.pt')  # 'n' = nano (fastest), can use 's', 'm', 'l', 'x' for better accuracy
-logger.info("YOLOv8 model loaded successfully")
+# Load YOLOv11 model (will download on first run)
+logger.info("Loading YOLOv11 model...")
+model = YOLO('yolo11n.pt')  # 'n' = nano (fastest), can use 's', 'm', 'l', 'x' for better accuracy
+logger.info("YOLOv11 model loaded successfully")
 
 # Map YOLO classes to inventory categories
 CATEGORY_MAPPING = {
@@ -235,8 +235,8 @@ def read_root():
     """Health check endpoint"""
     return {
         "service": "YOLO Object Detection",
-        "version": "1.0.0",
-        "model": "YOLOv8n",
+        "version": "2.0.0",
+        "model": "YOLOv11n",
         "status": "healthy"
     }
 
