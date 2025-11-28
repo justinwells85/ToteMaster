@@ -6,6 +6,9 @@
 import { jest } from '@jest/globals';
 import request from 'supertest';
 
+// Enable AI for integration tests
+process.env.AI_ENABLED = 'true';
+
 // Mock ToteRepository
 const mockToteRepository = {
   findById: jest.fn(),

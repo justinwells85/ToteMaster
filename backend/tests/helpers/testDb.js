@@ -11,19 +11,22 @@ let initialized = false;
 /**
  * Initialize test database
  * Runs migrations to set up schema
+ * @returns {Promise<boolean>} true if database is available, false otherwise
  */
 export async function setupTestDb() {
   if (!initialized) {
     // Test database connection
     const connected = await db.testConnection();
     if (!connected) {
-      throw new Error('Could not connect to test database');
+      console.warn('Database not available - skipping database-dependent tests');
+      return false;
     }
 
     // Run migrations to ensure schema is up to date
     await runMigrations();
     initialized = true;
   }
+  return true;
 }
 
 /**
