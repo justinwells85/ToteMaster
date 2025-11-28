@@ -35,8 +35,10 @@ async function checkYoloService() {
 // Check on startup
 checkYoloService();
 
-// Re-check every 30 seconds
-setInterval(checkYoloService, 30000);
+// Re-check every 30 seconds (skip in test environment)
+if (process.env.NODE_ENV !== 'test') {
+  setInterval(checkYoloService, 30000);
+}
 
 /**
  * Check if AI features are available
