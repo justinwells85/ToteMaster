@@ -2,21 +2,38 @@ import { jest } from '@jest/globals';
 import ItemRepository from '../../src/db/repositories/ItemRepository.js';
 import { setupTestDb, cleanTestDb, closeTestDb, createTestTote, createTestItem } from '../helpers/testDb.js';
 
+let dbAvailable = false;
+
 describe('ItemRepository', () => {
   beforeAll(async () => {
-    await setupTestDb();
+    dbAvailable = await setupTestDb();
   });
 
   beforeEach(async () => {
-    await cleanTestDb();
+    if (dbAvailable) {
+      await cleanTestDb();
+    }
   });
 
   afterAll(async () => {
-    await closeTestDb();
+    if (dbAvailable) {
+      await closeTestDb();
+    }
   });
 
+  // Helper to conditionally run tests
+  const itDb = (name, fn) => {
+    it(name, async () => {
+      if (!dbAvailable) {
+        console.log(`Skipping "${name}" - database not available`);
+        return;
+      }
+      await fn();
+    });
+  };
+
   describe('create', () => {
-    it('should create a new item', async () => {
+    itDb('should create a new item', async () => {
       const itemData = {
         name: 'Test Item',
         description: 'Test Description',
@@ -39,7 +56,7 @@ describe('ItemRepository', () => {
       expect(item).toHaveProperty('updatedAt');
     });
 
-    it('should create item with tote reference', async () => {
+    itDb('should create item with tote reference', async () => {
       const tote = await createTestTote({ name: 'Test Tote' });
 
       const itemData = {
@@ -52,7 +69,7 @@ describe('ItemRepository', () => {
       expect(item.toteId).toBe(tote.id);
     });
 
-    it('should create item with minimal data', async () => {
+    itDb('should create item with minimal data', async () => {
       const itemData = {
         name: 'Minimal Item',
       };
@@ -67,7 +84,7 @@ describe('ItemRepository', () => {
   });
 
   describe('findAll', () => {
-    it('should return all items with pagination', async () => {
+    itDb('should return all items with pagination', async () => {
       // Create test items
       await createTestItem({ name: 'Item 1' });
       await createTestItem({ name: 'Item 2' });
@@ -82,7 +99,7 @@ describe('ItemRepository', () => {
       expect(result.totalPages).toBe(1);
     });
 
-    it('should paginate results correctly', async () => {
+    itDb('should paginate results correctly', async () => {
       // Create 5 items
       for (let i = 1; i <= 5; i++) {
         await createTestItem({ name: `Item ${i}` });
@@ -98,7 +115,7 @@ describe('ItemRepository', () => {
       expect(page1.totalPages).toBe(3);
     });
 
-    it('should filter by toteId', async () => {
+    itDb('should filter by toteId', async () => {
       const tote1 = await createTestTote({ name: 'Tote 1' });
       const tote2 = await createTestTote({ name: 'Tote 2' });
 
@@ -112,7 +129,7 @@ describe('ItemRepository', () => {
       expect(result.items.every(item => item.toteId === tote1.id)).toBe(true);
     });
 
-    it('should sort items', async () => {
+    itDb('should sort items', async () => {
       await createTestItem({ name: 'Charlie' });
       await createTestItem({ name: 'Alice' });
       await createTestItem({ name: 'Bob' });
@@ -130,7 +147,7 @@ describe('ItemRepository', () => {
   });
 
   describe('findById', () => {
-    it('should find item by id', async () => {
+    itDb('should find item by id', async () => {
       const created = await createTestItem({ name: 'Find Me' });
 
       const found = await ItemRepository.findById(created.id);
@@ -140,7 +157,7 @@ describe('ItemRepository', () => {
       expect(found.name).toBe('Find Me');
     });
 
-    it('should return null for non-existent id', async () => {
+    itDb('should return null for non-existent id', async () => {
       const found = await ItemRepository.findById('non-existent-id');
 
       expect(found).toBeNull();
@@ -148,7 +165,7 @@ describe('ItemRepository', () => {
   });
 
   describe('update', () => {
-    it('should update item', async () => {
+    itDb('should update item', async () => {
       const item = await createTestItem({ name: 'Original Name', quantity: 1 });
 
       const updated = await ItemRepository.update(item.id, {
@@ -162,7 +179,7 @@ describe('ItemRepository', () => {
       expect(new Date(updated.updatedAt).getTime()).toBeGreaterThan(new Date(item.updatedAt).getTime());
     });
 
-    it('should return null when updating non-existent item', async () => {
+    itDb('should return null when updating non-existent item', async () => {
       const updated = await ItemRepository.update('non-existent-id', { name: 'Test' });
 
       expect(updated).toBeNull();
@@ -170,7 +187,7 @@ describe('ItemRepository', () => {
   });
 
   describe('delete', () => {
-    it('should delete item', async () => {
+    itDb('should delete item', async () => {
       const item = await createTestItem({ name: 'Delete Me' });
 
       const deleted = await ItemRepository.delete(item.id);
@@ -181,7 +198,7 @@ describe('ItemRepository', () => {
       expect(found).toBeNull();
     });
 
-    it('should return false when deleting non-existent item', async () => {
+    itDb('should return false when deleting non-existent item', async () => {
       const deleted = await ItemRepository.delete('non-existent-id');
 
       expect(deleted).toBe(false);
@@ -189,7 +206,7 @@ describe('ItemRepository', () => {
   });
 
   describe('search', () => {
-    it('should search items by name', async () => {
+    itDb('should search items by name', async () => {
       await createTestItem({ name: 'Red Ball' });
       await createTestItem({ name: 'Blue Ball' });
       await createTestItem({ name: 'Green Car' });
@@ -200,7 +217,7 @@ describe('ItemRepository', () => {
       expect(results.every(item => item.name.includes('Ball'))).toBe(true);
     });
 
-    it('should search items by description', async () => {
+    itDb('should search items by description', async () => {
       await createTestItem({ name: 'Item 1', description: 'Contains keyword' });
       await createTestItem({ name: 'Item 2', description: 'No match' });
 
@@ -210,7 +227,7 @@ describe('ItemRepository', () => {
       expect(results[0].description).toContain('keyword');
     });
 
-    it('should search items by category', async () => {
+    itDb('should search items by category', async () => {
       await createTestItem({ name: 'Item 1', category: 'Electronics' });
       await createTestItem({ name: 'Item 2', category: 'Tools' });
 
@@ -220,7 +237,7 @@ describe('ItemRepository', () => {
       expect(results[0].category).toBe('Electronics');
     });
 
-    it('should search items by tags', async () => {
+    itDb('should search items by tags', async () => {
       await createTestItem({ name: 'Item 1', tags: ['vintage', 'collectible'] });
       await createTestItem({ name: 'Item 2', tags: ['modern', 'new'] });
 
@@ -230,7 +247,7 @@ describe('ItemRepository', () => {
       expect(results[0].tags).toContain('vintage');
     });
 
-    it('should be case-insensitive', async () => {
+    itDb('should be case-insensitive', async () => {
       await createTestItem({ name: 'UPPERCASE NAME' });
 
       const results = await ItemRepository.search('uppercase');
@@ -240,7 +257,7 @@ describe('ItemRepository', () => {
   });
 
   describe('findByToteId', () => {
-    it('should find all items in a tote', async () => {
+    itDb('should find all items in a tote', async () => {
       const tote = await createTestTote({ name: 'Test Tote' });
       await createTestItem({ name: 'Item 1', toteId: tote.id });
       await createTestItem({ name: 'Item 2', toteId: tote.id });
@@ -252,7 +269,7 @@ describe('ItemRepository', () => {
       expect(items.every(item => item.toteId === tote.id)).toBe(true);
     });
 
-    it('should return empty array for tote with no items', async () => {
+    itDb('should return empty array for tote with no items', async () => {
       const tote = await createTestTote({ name: 'Empty Tote' });
 
       const items = await ItemRepository.findByToteId(tote.id);

@@ -5,9 +5,14 @@
 
 import { jest } from '@jest/globals';
 
+// Set AI_ENABLED to true for tests
+process.env.AI_ENABLED = 'true';
+
 // Mock axios before importing aiService
 const mockAxios = {
-  get: jest.fn(),
+  get: jest.fn().mockResolvedValue({
+    data: { status: 'healthy', model: 'YOLOv11n' },
+  }),
   post: jest.fn(),
 };
 

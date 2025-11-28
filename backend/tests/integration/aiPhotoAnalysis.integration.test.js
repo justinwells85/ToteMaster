@@ -6,6 +6,9 @@
 import { jest } from '@jest/globals';
 import request from 'supertest';
 
+// Enable AI for integration tests
+process.env.AI_ENABLED = 'true';
+
 // Mock ToteRepository
 const mockToteRepository = {
   findById: jest.fn(),
@@ -17,8 +20,11 @@ jest.unstable_mockModule('../../src/db/repositories/ToteRepository.js', () => ({
 }));
 
 // Mock axios for YOLO service calls
+// Set up get mock with default healthy response for initial health check
 const mockAxios = {
-  get: jest.fn(),
+  get: jest.fn().mockResolvedValue({
+    data: { status: 'healthy', model: 'YOLOv11n', version: '2.0.0' },
+  }),
   post: jest.fn(),
 };
 
@@ -293,11 +299,14 @@ describe('AI Photo Analysis Integration Tests', () => {
     });
 
     it('should validate tote ID parameter', async () => {
+      // "invalid-id" is a valid string ID, but tote doesn't exist
+      mockToteRepository.findById.mockResolvedValue(null);
+
       const response = await request(app)
         .post('/api/totes/invalid-id/analyze-photos')
-        .expect(400);
+        .expect(404);
 
-      expect(response.body).toHaveProperty('error');
+      expect(response.body).toHaveProperty('error', 'Tote not found');
     });
   });
 

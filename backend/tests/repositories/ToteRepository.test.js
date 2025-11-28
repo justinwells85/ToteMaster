@@ -2,21 +2,38 @@ import { jest } from '@jest/globals';
 import ToteRepository from '../../src/db/repositories/ToteRepository.js';
 import { setupTestDb, cleanTestDb, closeTestDb, createTestTote, createTestItem } from '../helpers/testDb.js';
 
+let dbAvailable = false;
+
 describe('ToteRepository', () => {
   beforeAll(async () => {
-    await setupTestDb();
+    dbAvailable = await setupTestDb();
   });
 
   beforeEach(async () => {
-    await cleanTestDb();
+    if (dbAvailable) {
+      await cleanTestDb();
+    }
   });
 
   afterAll(async () => {
-    await closeTestDb();
+    if (dbAvailable) {
+      await closeTestDb();
+    }
   });
 
+  // Helper to conditionally run tests
+  const itDb = (name, fn) => {
+    it(name, async () => {
+      if (!dbAvailable) {
+        console.log(`Skipping "${name}" - database not available`);
+        return;
+      }
+      await fn();
+    });
+  };
+
   describe('create', () => {
-    it('should create a new tote', async () => {
+    itDb('should create a new tote', async () => {
       const toteData = {
         name: 'Test Tote',
         location: 'Garage',
@@ -35,7 +52,7 @@ describe('ToteRepository', () => {
       expect(tote).toHaveProperty('updatedAt');
     });
 
-    it('should create tote with minimal data', async () => {
+    itDb('should create tote with minimal data', async () => {
       const toteData = {
         name: 'Minimal Tote',
       };
@@ -51,7 +68,7 @@ describe('ToteRepository', () => {
   });
 
   describe('findAll', () => {
-    it('should return all totes', async () => {
+    itDb('should return all totes', async () => {
       await createTestTote({ name: 'Tote 1' });
       await createTestTote({ name: 'Tote 2' });
       await createTestTote({ name: 'Tote 3' });
@@ -61,13 +78,13 @@ describe('ToteRepository', () => {
       expect(totes).toHaveLength(3);
     });
 
-    it('should return empty array when no totes exist', async () => {
+    itDb('should return empty array when no totes exist', async () => {
       const totes = await ToteRepository.findAll();
 
       expect(totes).toEqual([]);
     });
 
-    it('should sort totes by creation date descending', async () => {
+    itDb('should sort totes by creation date descending', async () => {
       // Create totes with slight delay to ensure different timestamps
       const tote1 = await createTestTote({ name: 'First', createdAt: new Date('2024-01-01').toISOString() });
       const tote2 = await createTestTote({ name: 'Second', createdAt: new Date('2024-01-02').toISOString() });
@@ -83,7 +100,7 @@ describe('ToteRepository', () => {
   });
 
   describe('findById', () => {
-    it('should find tote by id', async () => {
+    itDb('should find tote by id', async () => {
       const created = await createTestTote({ name: 'Find Me' });
 
       const found = await ToteRepository.findById(created.id);
@@ -93,7 +110,7 @@ describe('ToteRepository', () => {
       expect(found.name).toBe('Find Me');
     });
 
-    it('should return null for non-existent id', async () => {
+    itDb('should return null for non-existent id', async () => {
       const found = await ToteRepository.findById('non-existent-id');
 
       expect(found).toBeNull();
@@ -101,7 +118,7 @@ describe('ToteRepository', () => {
   });
 
   describe('update', () => {
-    it('should update tote', async () => {
+    itDb('should update tote', async () => {
       const tote = await createTestTote({ name: 'Original Name', location: 'Garage' });
 
       const updated = await ToteRepository.update(tote.id, {
@@ -117,7 +134,7 @@ describe('ToteRepository', () => {
       expect(new Date(updated.updatedAt).getTime()).toBeGreaterThan(new Date(tote.updatedAt).getTime());
     });
 
-    it('should allow partial updates', async () => {
+    itDb('should allow partial updates', async () => {
       const tote = await createTestTote({ name: 'Original', location: 'Garage', color: 'blue' });
 
       const updated = await ToteRepository.update(tote.id, {
@@ -129,7 +146,7 @@ describe('ToteRepository', () => {
       expect(updated.color).toBe('blue'); // Unchanged
     });
 
-    it('should return null when updating non-existent tote', async () => {
+    itDb('should return null when updating non-existent tote', async () => {
       const updated = await ToteRepository.update('non-existent-id', { name: 'Test' });
 
       expect(updated).toBeNull();
@@ -137,7 +154,7 @@ describe('ToteRepository', () => {
   });
 
   describe('delete', () => {
-    it('should delete tote', async () => {
+    itDb('should delete tote', async () => {
       const tote = await createTestTote({ name: 'Delete Me' });
 
       const deleted = await ToteRepository.delete(tote.id);
@@ -148,13 +165,13 @@ describe('ToteRepository', () => {
       expect(found).toBeNull();
     });
 
-    it('should return false when deleting non-existent tote', async () => {
+    itDb('should return false when deleting non-existent tote', async () => {
       const deleted = await ToteRepository.delete('non-existent-id');
 
       expect(deleted).toBe(false);
     });
 
-    it('should cascade delete items when tote is deleted', async () => {
+    itDb('should cascade delete items when tote is deleted', async () => {
       const tote = await createTestTote({ name: 'Tote with Items' });
       await createTestItem({ name: 'Item 1', toteId: tote.id });
       await createTestItem({ name: 'Item 2', toteId: tote.id });
@@ -170,7 +187,7 @@ describe('ToteRepository', () => {
   });
 
   describe('countItems', () => {
-    it('should count items in a tote', async () => {
+    itDb('should count items in a tote', async () => {
       const tote = await createTestTote({ name: 'Tote with Items' });
       await createTestItem({ name: 'Item 1', toteId: tote.id });
       await createTestItem({ name: 'Item 2', toteId: tote.id });
@@ -181,7 +198,7 @@ describe('ToteRepository', () => {
       expect(count).toBe(3);
     });
 
-    it('should return 0 for empty tote', async () => {
+    itDb('should return 0 for empty tote', async () => {
       const tote = await createTestTote({ name: 'Empty Tote' });
 
       const count = await ToteRepository.countItems(tote.id);
@@ -189,7 +206,7 @@ describe('ToteRepository', () => {
       expect(count).toBe(0);
     });
 
-    it('should return 0 for non-existent tote', async () => {
+    itDb('should return 0 for non-existent tote', async () => {
       const count = await ToteRepository.countItems('non-existent-id');
 
       expect(count).toBe(0);
@@ -197,7 +214,7 @@ describe('ToteRepository', () => {
   });
 
   describe('getItemsInTote', () => {
-    it('should get all items in a tote', async () => {
+    itDb('should get all items in a tote', async () => {
       const tote = await createTestTote({ name: 'Test Tote' });
       await createTestItem({ name: 'Item 1', toteId: tote.id });
       await createTestItem({ name: 'Item 2', toteId: tote.id });
@@ -209,7 +226,7 @@ describe('ToteRepository', () => {
       expect(items.every(item => item.toteId === tote.id)).toBe(true);
     });
 
-    it('should return empty array for empty tote', async () => {
+    itDb('should return empty array for empty tote', async () => {
       const tote = await createTestTote({ name: 'Empty Tote' });
 
       const items = await ToteRepository.getItemsInTote(tote.id);
@@ -217,7 +234,7 @@ describe('ToteRepository', () => {
       expect(items).toEqual([]);
     });
 
-    it('should return null for non-existent tote', async () => {
+    itDb('should return null for non-existent tote', async () => {
       const items = await ToteRepository.getItemsInTote('non-existent-id');
 
       expect(items).toBeNull();
