@@ -4,11 +4,12 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getAllTotes } from '@/services/totesService';
 import { getAllItems } from '@/services/itemsService';
 import { getAllLocations } from '@/services/locationsService';
+import { getAllTags } from '@/services/tagsService';
 import { generateTestData, clearAllData } from '@/services/testDataService';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, Package, Box, MapPin, Database, Trash2 } from 'lucide-react';
+import { Search, Package, Box, MapPin, Database, Trash2, Tag } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function Dashboard() {
@@ -44,10 +45,9 @@ export default function Dashboard() {
 
     const matchedTotes = totes.filter(
       (tote) =>
-        tote.name?.toLowerCase().includes(query) ||
         tote.location?.toLowerCase().includes(query) ||
         tote.description?.toLowerCase().includes(query) ||
-        tote.toteNumber?.toString().includes(query)
+        tote.id?.toString().includes(query)
     );
 
     const matchedItems = items.filter(
@@ -72,14 +72,18 @@ export default function Dashboard() {
     try {
       setIsGenerating(true);
       const result = await generateTestData();
+
+      // Refetch all data immediately after generation
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['totes'], refetchType: 'active' }),
+        queryClient.invalidateQueries({ queryKey: ['items'], refetchType: 'active' }),
+        queryClient.invalidateQueries({ queryKey: ['locations'], refetchType: 'active' }),
+        queryClient.invalidateQueries({ queryKey: ['tags'], refetchType: 'active' }),
+      ]);
+
       toast.success('Test data generated successfully!', {
         description: `Created ${result.summary.totes} totes with ${result.summary.items} items`,
       });
-      // Refetch all data
-      queryClient.invalidateQueries(['totes']);
-      queryClient.invalidateQueries(['items']);
-      queryClient.invalidateQueries(['locations']);
-      queryClient.invalidateQueries(['tags']);
     } catch (error) {
       toast.error('Failed to generate test data', {
         description: error.message,
@@ -97,14 +101,18 @@ export default function Dashboard() {
     try {
       setIsClearing(true);
       const result = await clearAllData();
+
+      // Refetch all data immediately after clearing
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['totes'], refetchType: 'active' }),
+        queryClient.invalidateQueries({ queryKey: ['items'], refetchType: 'active' }),
+        queryClient.invalidateQueries({ queryKey: ['locations'], refetchType: 'active' }),
+        queryClient.invalidateQueries({ queryKey: ['tags'], refetchType: 'active' }),
+      ]);
+
       toast.success('All data cleared successfully!', {
         description: `Deleted ${result.summary.totes} totes and ${result.summary.items} items`,
       });
-      // Refetch all data
-      queryClient.invalidateQueries(['totes']);
-      queryClient.invalidateQueries(['items']);
-      queryClient.invalidateQueries(['locations']);
-      queryClient.invalidateQueries(['tags']);
     } catch (error) {
       toast.error('Failed to clear data', {
         description: error.message,
@@ -114,18 +122,25 @@ export default function Dashboard() {
     }
   };
 
+  const { data: tags = [], isLoading: tagsLoading } = useQuery({
+    queryKey: ['tags'],
+    queryFn: getAllTags,
+  });
+
   const stats = {
     totalTotes: totes.length,
     totalItems: items.length,
+    totalTags: tags.length,
+    totalLocations: locations.length,
   };
 
-  const isLoading = totesLoading || itemsLoading || locationsLoading;
+  const isLoading = totesLoading || itemsLoading || locationsLoading || tagsLoading;
 
   return (
     <div className="container mx-auto px-8 py-8 max-w-7xl">
       {/* Global Search Bar */}
       <div className="mb-8">
-        <div className="relative max-w-2xl">
+        <div className="relative">
           <Search className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
           <Input
             type="text"
@@ -159,7 +174,7 @@ export default function Dashboard() {
                         className="p-3 rounded-md hover:bg-accent cursor-pointer transition-colors border border-border"
                       >
                         <p className="font-medium">
-                          #{tote.toteNumber} {tote.name && `- ${tote.name}`}
+                          Tote #{tote.id}
                         </p>
                         <p className="text-xs text-muted-foreground">
                           {tote.location || 'No location'}
@@ -235,7 +250,7 @@ export default function Dashboard() {
       </div>
 
       {/* Stats Cards - Now Clickable */}
-      <div className="grid gap-6 md:grid-cols-2 mb-8">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
         <Card
           className="hover:shadow-lg transition-shadow cursor-pointer"
           onClick={() => navigate('/totes')}
@@ -271,6 +286,42 @@ export default function Dashboard() {
             </p>
           </CardContent>
         </Card>
+
+        <Card
+          className="hover:shadow-lg transition-shadow cursor-pointer"
+          onClick={() => navigate('/tags')}
+        >
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Tags</CardTitle>
+            <Tag className="h-4 w-4 text-primary" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-primary">
+              {isLoading ? '...' : stats.totalTags}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Click to manage tags
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card
+          className="hover:shadow-lg transition-shadow cursor-pointer"
+          onClick={() => navigate('/locations')}
+        >
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Locations</CardTitle>
+            <MapPin className="h-4 w-4 text-primary" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-primary">
+              {isLoading ? '...' : stats.totalLocations}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Click to manage locations
+            </p>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Test Data Buttons */}
@@ -301,7 +352,7 @@ export default function Dashboard() {
             </Button>
           </div>
           <p className="text-sm text-muted-foreground mt-3">
-            Generate test data creates 10 totes with 2-8 random items each. Clear all data will permanently delete all your totes, items, locations, and tags.
+            Generate test data creates 10 totes with 2-8 unique items each (20-80 total items). Clear all data will permanently delete all your totes, items, locations, and tags.
           </p>
         </CardContent>
       </Card>

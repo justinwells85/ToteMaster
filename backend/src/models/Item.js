@@ -24,8 +24,9 @@ export const ItemSchema = {
     trim: true,
   },
   toteId: {
-    type: 'string',
+    type: 'number',
     required: false, // Items can exist without being assigned to a tote
+    integer: true,
   },
   quantity: {
     type: 'number',
@@ -40,10 +41,11 @@ export const ItemSchema = {
     enum: ['new', 'excellent', 'good', 'fair', 'poor', 'damaged'],
     default: 'good',
   },
-  photoUrl: {
-    type: 'string',
+  photos: {
+    type: 'array',
     required: false,
-    pattern: /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/,
+    default: [],
+    itemType: 'string',
   },
   tags: {
     type: 'array',
@@ -206,7 +208,7 @@ export function createItemModel(data) {
     toteId: sanitized.toteId || null,
     quantity: sanitized.quantity || 1,
     condition: sanitized.condition || 'good',
-    photoUrl: sanitized.photoUrl || '',
+    photos: sanitized.photos || [],
     tags: sanitized.tags || [],
   };
 }

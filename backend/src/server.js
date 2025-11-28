@@ -1,6 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import itemsRouter from './routes/items.js';
 import totesRouter from './routes/totes.js';
 import authRouter from './routes/auth.js';
@@ -11,6 +13,9 @@ import { requestLogger } from './middleware/logger.js';
 import logger from './utils/logger.js';
 import db from './db/index.js';
 import { runMigrations } from './db/migrate.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Load environment variables
 dotenv.config();
@@ -23,6 +28,11 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(requestLogger);
+
+// Serve uploaded files statically
+const uploadPath = process.env.STORAGE_PATH || path.join(process.cwd(), 'uploads');
+app.use('/uploads', express.static(uploadPath));
+logger.info(`Static file serving configured for: ${uploadPath}`);
 
 // Routes
 app.get('/', (req, res) => {
@@ -123,7 +133,9 @@ async function startServer() {
   }
 }
 
-// Start the server
-startServer();
+// Start the server only if not in test environment
+if (process.env.NODE_ENV !== 'test') {
+  startServer();
+}
 
 export default app;

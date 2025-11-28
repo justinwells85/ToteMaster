@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getAllTotes, updateTote, deleteTote } from '@/services/totesService';
-import { getAllItems } from '@/services/itemsService';
+import { getAllTotes, updateTote, deleteTote, uploadTotePhotos, deleteTotePhoto, analyzeTotePhotos } from '@/services/totesService';
+import { getAllItems, createItem } from '@/services/itemsService';
 import { getAllLocations } from '@/services/locationsService';
 import { getAllTags, getTagsByToteId, addTagToTote, removeTagFromTote } from '@/services/tagsService';
 import { generateToteLabel } from '@/lib/labelGenerator';
@@ -11,7 +11,10 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { ArrowLeft, Edit, Trash2, Package, MapPin, QrCode, Tag as TagIcon, Hash, Image as ImageIcon, X } from 'lucide-react';
+import { ArrowLeft, Edit, Trash2, Package, MapPin, QrCode, Tag as TagIcon, Hash, Image as ImageIcon, X, Upload, Sparkles } from 'lucide-react';
+import PhotoUpload from '@/components/PhotoUpload';
+import PhotoGallery from '@/components/PhotoGallery';
+import AIItemSuggestions from '@/components/AIItemSuggestions';
 
 export default function ToteDetail() {
   const { id } = useParams();
@@ -19,8 +22,14 @@ export default function ToteDetail() {
   const queryClient = useQueryClient();
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isTagsOpen, setIsTagsOpen] = useState(false);
-  const [editForm, setEditForm] = useState({ name: '', locationId: '', description: '', color: '' });
+  const [isPhotoUploadOpen, setIsPhotoUploadOpen] = useState(false);
+  const [isAIAnalysisOpen, setIsAIAnalysisOpen] = useState(false);
+  const [editForm, setEditForm] = useState({ locationId: '', description: '', color: '', tags: [] });
   const [selectedTags, setSelectedTags] = useState([]);
+  const [selectedPhotos, setSelectedPhotos] = useState([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [aiSuggestions, setAiSuggestions] = useState([]);
 
   const { data: totes = [] } = useQuery({
     queryKey: ['totes'],
@@ -71,10 +80,10 @@ export default function ToteDetail() {
   const handleEdit = () => {
     if (tote) {
       setEditForm({
-        name: tote.name || '',
         locationId: tote.locationId || '',
         description: tote.description || '',
         color: tote.color || '',
+        tags: tote.tags || [],
       });
       setIsEditOpen(true);
     }
@@ -113,6 +122,94 @@ export default function ToteDetail() {
     }
   };
 
+  const handleUploadPhotos = async () => {
+    if (selectedPhotos.length === 0) {
+      alert('Please select at least one photo');
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      await uploadTotePhotos(id, selectedPhotos);
+      queryClient.invalidateQueries({ queryKey: ['totes'] });
+      setIsPhotoUploadOpen(false);
+      setSelectedPhotos([]);
+    } catch (err) {
+      console.error('Upload error:', err);
+      alert(err.message || 'Failed to upload photos');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleDeletePhoto = async (photoUrl) => {
+    try {
+      await deleteTotePhoto(id, photoUrl);
+      queryClient.invalidateQueries({ queryKey: ['totes'] });
+    } catch (err) {
+      console.error('Delete error:', err);
+      throw err; // Re-throw to let PhotoGallery handle the error
+    }
+  };
+
+  const handleAnalyzePhotos = async () => {
+    if (!tote?.photos || tote.photos.length === 0) {
+      alert('Please upload photos first before analyzing');
+      return;
+    }
+
+    setIsAnalyzing(true);
+    try {
+      const response = await analyzeTotePhotos(id);
+
+      if (!response.available) {
+        alert(response.message || 'AI features are not available');
+        return;
+      }
+
+      if (response.items.length === 0) {
+        alert(response.message || 'No items were identified in the photos');
+        return;
+      }
+
+      setAiSuggestions(response.items);
+      setIsAIAnalysisOpen(true);
+    } catch (err) {
+      console.error('Analysis error:', err);
+      alert(err.message || 'Failed to analyze photos');
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const handleCreateItemsFromAI = async (items) => {
+    try {
+      // Create all selected items
+      const createPromises = items.map((item) =>
+        createItem({
+          name: item.name,
+          description: item.description,
+          category: item.category,
+          toteId: id,
+          quantity: item.quantity,
+          condition: item.condition,
+        })
+      );
+
+      await Promise.all(createPromises);
+
+      // Refresh items and close dialog
+      queryClient.invalidateQueries({ queryKey: ['items'] });
+      setIsAIAnalysisOpen(false);
+      setAiSuggestions([]);
+
+      alert(`Successfully created ${items.length} item${items.length !== 1 ? 's' : ''}`);
+    } catch (err) {
+      console.error('Error creating items:', err);
+      alert(err.message || 'Failed to create some items');
+    }
+  };
+
   const handleSave = async (e) => {
     e.preventDefault();
     try {
@@ -123,7 +220,7 @@ export default function ToteDetail() {
   };
 
   const handleDelete = async () => {
-    if (window.confirm(`Are you sure you want to delete "${tote?.name}"? This will not delete the items inside.`)) {
+    if (window.confirm(`Are you sure you want to delete Tote #${tote?.id}? This will not delete the items inside.`)) {
       try {
         await deleteMutation.mutateAsync(id);
       } catch (err) {
@@ -170,12 +267,6 @@ export default function ToteDetail() {
         <div className="flex items-start justify-between">
           <div>
             <div className="flex items-center gap-3 mb-2">
-              <div className="flex items-center gap-2">
-                <Hash className="h-6 w-6 text-muted-foreground" />
-                <span className="text-2xl font-bold text-muted-foreground">
-                  {tote.toteNumber}
-                </span>
-              </div>
               {tote.color && (
                 <div
                   className="w-8 h-8 rounded-full border-2 border-gray-300"
@@ -184,7 +275,7 @@ export default function ToteDetail() {
                 />
               )}
             </div>
-            <h1 className="text-4xl font-bold text-primary mb-2">{tote.name || `Tote #${tote.toteNumber}`}</h1>
+            <h1 className="text-4xl font-bold text-primary mb-2">Tote #{tote.id}</h1>
             <div className="flex items-center gap-4 text-muted-foreground">
               {location && (
                 <div className="flex items-center gap-1">
@@ -301,33 +392,36 @@ export default function ToteDetail() {
         )}
 
         {/* Photos */}
-        {tote.photos && tote.photos.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Photos</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {tote.photos.map((photo, index) => (
-                  <div
-                    key={index}
-                    className="aspect-square rounded-lg overflow-hidden border bg-muted flex items-center justify-center"
-                  >
-                    <img
-                      src={photo}
-                      alt={`Tote photo ${index + 1}`}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        e.target.style.display = 'none';
-                        e.target.parentElement.innerHTML = `<div class="flex items-center justify-center w-full h-full text-muted-foreground"><ImageIcon class="h-12 w-12" /></div>`;
-                      }}
-                    />
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>Photos</CardTitle>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleAnalyzePhotos}
+                disabled={isAnalyzing || !tote?.photos || tote.photos.length === 0}
+              >
+                <Sparkles className="h-4 w-4 mr-2" />
+                {isAnalyzing ? 'Analyzing...' : 'Analyze with AI'}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsPhotoUploadOpen(true)}
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                Upload Photos
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <PhotoGallery
+              photos={tote?.photos || []}
+              onDeletePhoto={handleDeletePhoto}
+            />
+          </CardContent>
+        </Card>
       </div>
 
       {/* Items in Tote */}
@@ -374,17 +468,9 @@ export default function ToteDetail() {
         <DialogContent onClose={() => setIsEditOpen(false)}>
           <form onSubmit={handleSave}>
             <DialogHeader>
-              <DialogTitle>Edit Tote</DialogTitle>
+              <DialogTitle>Edit Tote #{tote?.id}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Name (Optional)</label>
-                <Input
-                  value={editForm.name}
-                  onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                  placeholder={`Tote #${tote?.toteNumber}`}
-                />
-              </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Location</label>
                 <Select
@@ -477,6 +563,58 @@ export default function ToteDetail() {
               Save Tags
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Photo Upload Dialog */}
+      <Dialog open={isPhotoUploadOpen} onOpenChange={setIsPhotoUploadOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Upload Photos</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <PhotoUpload
+              onPhotosSelected={setSelectedPhotos}
+              maxFiles={10}
+              disabled={isUploading}
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setIsPhotoUploadOpen(false);
+                setSelectedPhotos([]);
+              }}
+              disabled={isUploading}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleUploadPhotos}
+              disabled={isUploading || selectedPhotos.length === 0}
+            >
+              {isUploading ? 'Uploading...' : `Upload ${selectedPhotos.length} Photo${selectedPhotos.length !== 1 ? 's' : ''}`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* AI Analysis Dialog */}
+      <Dialog open={isAIAnalysisOpen} onOpenChange={setIsAIAnalysisOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden">
+          <DialogHeader>
+            <DialogTitle>AI Identified Items</DialogTitle>
+          </DialogHeader>
+          <div className="overflow-y-auto">
+            <AIItemSuggestions
+              items={aiSuggestions}
+              toteId={id}
+              onCreateAll={handleCreateItemsFromAI}
+              onClose={() => setIsAIAnalysisOpen(false)}
+            />
+          </div>
         </DialogContent>
       </Dialog>
     </div>
