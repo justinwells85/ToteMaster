@@ -59,6 +59,8 @@ jobs:
           target: development
           push: false
           tags: totemaster-frontend:dev
+          build-args: |
+            VITE_API_URL=http://localhost:3000
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
