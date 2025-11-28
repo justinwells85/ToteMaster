@@ -1,7 +1,7 @@
 name: Deploy to Windows
 
 on:
-  # Manual deployment trigger
+  # Manual deployment trigger only
   workflow_dispatch:
     inputs:
       environment:
@@ -13,10 +13,11 @@ on:
           - production
           - staging
 
-  # Automatic deployment on push to main
-  push:
-    branches:
-      - main
+  # Automatic deployment on push to main - DISABLED
+  # Uncomment when Windows self-hosted runner has Docker configured
+  # push:
+  #   branches:
+  #     - main
 
 jobs:
   deploy:
