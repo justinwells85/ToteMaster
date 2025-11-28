@@ -1,0 +1,26 @@
+# Dockerfile for CI testing
+# Pre-installs all YOLO dependencies for fast CI runs
+FROM python:3.10-slim
+
+LABEL org.opencontainers.image.source=https://github.com/justinwells85/ToteMaster
+LABEL org.opencontainers.image.description="ToteMaster YOLO Service CI Test Environment"
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    libgl1-mesa-glx \
+    libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements files
+COPY requirements.txt requirements-test.txt ./
+
+# Install Python dependencies
+# Use CPU-only PyTorch for smaller image and faster CI
+RUN pip install --no-cache-dir torch torchvision --index-url https://download.pytorch.org/whl/cpu && \
+    pip install --no-cache-dir -r requirements.txt && \
+    pip install --no-cache-dir -r requirements-test.txt
+
+# Set working directory for tests
+WORKDIR /workspace
