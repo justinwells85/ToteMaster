@@ -50,3 +50,45 @@ export const updateTote = async (id, toteData) => {
 export const deleteTote = async (id) => {
   return await apiClient.delete(`/totes/${id}`);
 };
+
+/**
+ * Upload photos to a tote
+ * @param {String} id - Tote ID
+ * @param {FileList|File[]} files - Files to upload
+ * @returns {Promise} - Updated tote with new photos
+ */
+export const uploadTotePhotos = async (id, files) => {
+  const formData = new FormData();
+
+  // Add files to form data
+  Array.from(files).forEach(file => {
+    formData.append('photos', file);
+  });
+
+  return await apiClient.post(`/totes/${id}/photos`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+};
+
+/**
+ * Delete a photo from a tote
+ * @param {String} id - Tote ID
+ * @param {String} photoUrl - Photo URL to delete
+ * @returns {Promise} - Updated tote without the photo
+ */
+export const deleteTotePhoto = async (id, photoUrl) => {
+  return await apiClient.delete(`/totes/${id}/photos`, {
+    data: { photoUrl },
+  });
+};
+
+/**
+ * Analyze tote photos using AI to identify items
+ * @param {String} id - Tote ID
+ * @returns {Promise} - Analysis results with identified items
+ */
+export const analyzeTotePhotos = async (id) => {
+  return await apiClient.post(`/totes/${id}/analyze-photos`);
+};

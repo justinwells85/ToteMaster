@@ -69,3 +69,112 @@ export const deleteTote = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+export const uploadPhotos = async (req, res) => {
+  try {
+    // Check if files were uploaded
+    if (!req.files || req.files.length === 0) {
+      logger.debug('No files uploaded', { toteId: req.params.id, userId: req.user.userId });
+      return res.status(400).json({ error: 'No files uploaded' });
+    }
+
+    const updatedTote = await totesService.uploadTotePhotos(
+      req.params.id,
+      req.files,
+      req.user.userId
+    );
+
+    if (!updatedTote) {
+      logger.debug('Tote not found for photo upload in controller', { toteId: req.params.id, userId: req.user.userId });
+      return res.status(404).json({ error: 'Tote not found' });
+    }
+
+    logger.info('Photos uploaded via controller', {
+      toteId: req.params.id,
+      userId: req.user.userId,
+      fileCount: req.files.length
+    });
+
+    res.json(updatedTote);
+  } catch (error) {
+    logger.logError('Error in uploadPhotos controller', error, {
+      toteId: req.params.id,
+      userId: req.user.userId
+    });
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const deletePhoto = async (req, res) => {
+  try {
+    const { photoUrl } = req.body;
+
+    if (!photoUrl) {
+      logger.debug('No photo URL provided', { toteId: req.params.id, userId: req.user.userId });
+      return res.status(400).json({ error: 'Photo URL is required' });
+    }
+
+    const updatedTote = await totesService.deleteTotePhoto(
+      req.params.id,
+      photoUrl,
+      req.user.userId
+    );
+
+    if (!updatedTote) {
+      logger.debug('Tote not found for photo deletion in controller', { toteId: req.params.id, userId: req.user.userId });
+      return res.status(404).json({ error: 'Tote not found' });
+    }
+
+    logger.info('Photo deleted via controller', {
+      toteId: req.params.id,
+      userId: req.user.userId,
+      photoUrl
+    });
+
+    res.json(updatedTote);
+  } catch (error) {
+    logger.logError('Error in deletePhoto controller', error, {
+      toteId: req.params.id,
+      userId: req.user.userId
+    });
+    res.status(400).json({ error: error.message });
+  }
+};
+
+export const analyzePhotos = async (req, res) => {
+  try {
+    const result = await totesService.analyzeTotePhotos(
+      req.params.id,
+      req.user.userId
+    );
+
+    if (result === null) {
+      logger.debug('Tote not found for photo analysis in controller', { toteId: req.params.id, userId: req.user.userId });
+      return res.status(404).json({ error: 'Tote not found' });
+    }
+
+    logger.info('Photos analyzed via controller', {
+      toteId: req.params.id,
+      userId: req.user.userId,
+      itemsFound: result.items.length
+    });
+
+    res.json(result);
+  } catch (error) {
+    logger.logError('Error in analyzePhotos controller', error, {
+      toteId: req.params.id,
+      userId: req.user.userId
+    });
+
+    // Provide user-friendly error messages
+    if (error.message.includes('not running')) {
+      return res.status(503).json({ error: 'YOLO service is not running. Please start the AI service.' });
+    } else if (error.message.includes('timeout')) {
+      return res.status(408).json({ error: 'Analysis timeout. Try analyzing fewer photos or smaller images.' });
+    } else if (error.message.includes('image')) {
+      return res.status(400).json({ error: 'Unable to process image. Please ensure photos are accessible.' });
+    }
+
+    res.status(500).json({ error: 'Failed to analyze photos. Please try again.' });
+  }
+};

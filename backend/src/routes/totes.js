@@ -5,6 +5,7 @@ import {
   validateIdParam,
 } from '../middleware/validation.js';
 import { requireAuth } from '../middleware/auth.js';
+import { uploadTotePhotos, handleUploadError } from '../middleware/upload.js';
 
 const router = express.Router();
 
@@ -25,5 +26,28 @@ router.put('/:id', validateIdParam(), validateToteRequest(true), totesController
 
 // DELETE tote
 router.delete('/:id', validateIdParam(), totesController.deleteTote);
+
+// POST upload photos to tote
+router.post(
+  '/:id/photos',
+  validateIdParam(),
+  uploadTotePhotos,
+  handleUploadError,
+  totesController.uploadPhotos
+);
+
+// DELETE photo from tote
+router.delete(
+  '/:id/photos',
+  validateIdParam(),
+  totesController.deletePhoto
+);
+
+// POST analyze tote photos with AI
+router.post(
+  '/:id/analyze-photos',
+  validateIdParam(),
+  totesController.analyzePhotos
+);
 
 export default router;
