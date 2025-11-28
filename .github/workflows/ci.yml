@@ -60,4 +60,7 @@ jobs:
 
       - name: Run pytest
         working-directory: ./backend/python-yolo-service
-        run: pytest
+        run: |
+          # Add current directory to PYTHONPATH so tests can import main module
+          export PYTHONPATH="${PYTHONPATH}:$(pwd)"
+          pytest
