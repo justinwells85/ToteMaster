@@ -3,6 +3,10 @@
 --              Remove name field from totes
 -- Created: 2025-11-21
 
+-- Step 0: Drop views first (they depend on constraints we need to modify)
+DROP VIEW IF EXISTS totes_with_details;
+DROP VIEW IF EXISTS items_with_details;
+
 -- Step 1: Create sequence for item numbers
 CREATE SEQUENCE IF NOT EXISTS item_number_seq START 1;
 
